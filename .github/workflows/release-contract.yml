@@ -16,9 +16,6 @@ jobs:
           contract_dir: ${{ fromJson(inputs.contract_dirs) }}
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Remove pre-installed Rust tools
-        run: rm -rf $HOME/.cargo/bin 
         
       - name: Get Soroban SDK and Rust Versions
         run: |
@@ -29,6 +26,9 @@ jobs:
             echo "Error: Rust version not found in Cargo.toml"
             exit 1 
           fi
+      
+      - name: Remove pre-installed Rust tools
+        run: rm -rf $HOME/.cargo/bin 
 
       - name: Setup Rust
         run: |   
