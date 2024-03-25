@@ -1,8 +1,12 @@
 name: Build and Optimize Contract
 
 on:
-  push:
-    branches: [ master ]
+  workflow_call:
+    inputs:
+      contract_dirs:
+        description: 'Semicolon-separated list of contract directories'
+        required: true 
+        type: string
 
 jobs:
   prepare_directories:
@@ -12,7 +16,7 @@ jobs:
       steps:
         - id: prepare
           name: Prepare Contract Directories
-          run: echo "CONTRACT_DIR_LIST=$(echo ${{ secrets.CONTRACT_DIRS }} | tr ";" "\n")" >> $GITHUB_ENV
+          run: echo "CONTRACT_DIR_LIST=$(echo ${{ inputs.contract_dirs }} | tr ";" "\n")" >> $GITHUB_ENV
     
   build:
     runs-on: ubuntu-latest
@@ -104,8 +108,6 @@ jobs:
           files: | 
             release-*.tar.gz
           name: Release ${{ env.release_hash }}-${{ env.package_version }}-${{ env.package_name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
   
       - name: Package Release
         run: |
