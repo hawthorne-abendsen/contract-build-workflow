@@ -3,17 +3,14 @@ name: Build and Optimize Contract
 on:
   workflow_call:
     inputs:
-      contract_dirs:
-        description: 'Semicolon-separated list of contract directories'
-        required: true 
+      contract_dir:
+        description: 'Relative path to the contract directory'
         type: string
+        default: '.'
 
 jobs:
   build:
     runs-on: ubuntu:latest 
-    strategy: 
-        matrix:
-          contract_dir: ${{ fromJson(inputs.contract_dirs) }}
     steps:
       - name: Preinstall dependencies
         run: |
@@ -30,8 +27,7 @@ jobs:
           echo "Required Rust version: $rust_version"
 
           if [ -z "$rust_version" ]; then
-            echo "Error: Rust version not found in Cargo.toml"
-            exit 1 
+            rust_version = "stable"
           fi
 
       - name: Setup Rust
@@ -52,16 +48,15 @@ jobs:
           wget https://github.com/WebAssembly/binaryen/releases/download/version_101/binaryen-version_101-x86_64-linux.tar.gz
           tar -xzf binaryen-version_101-x86_64-linux.tar.gz
           cp binaryen-version_101/bin/wasm-opt /usr/local/bin/
-          rm -rf binaryen-version_101 binaryen-version_101-x86_64-linux.tar.gz
 
           if [ $? -ne 0 ]; then
             echo "Error: Failed to install binaryen"
             exit 1
           fi
-
+          
       - name: Run Tests
-        working-directory: ${{ matrix.contract_dir }} 
-        if: matrix.contract_dir != '.'
+        working-directory: ${{ inputs.contract_dir }} 
+        if: inputs.contract_dir != '.'
         run: |
           cargo test --target wasm32-unknown-unknown
 
@@ -71,8 +66,8 @@ jobs:
           fi 
 
       - name: Build and Optimize
-        working-directory: ${{ matrix.contract_dir }} 
-        if: matrix.contract_dir != '.'
+        working-directory: ${{ inputs.contract_dir }} 
+        if: inputs.contract_dir != '.'
         run: |
           # Build the project
           cargo build --target wasm32-unknown-unknown --release  
