@@ -1,0 +1,113 @@
+name: Build and Optimize Contract
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  prepare_directories:
+      runs-on: ubuntu-latest
+      outputs:
+        contract_dir_list: ${{ steps.prepare.outputs.contract_dir_list }}
+      steps:
+        - id: prepare
+          name: Prepare Contract Directories
+          run: echo "CONTRACT_DIR_LIST=$(echo ${{ secrets.CONTRACT_DIRS }} | tr ";" "\n")" >> $GITHUB_ENV
+    
+  build:
+    runs-on: ubuntu-latest
+    strategy: 
+        matrix:
+          contract_dir: ${{ needs.prepare_directories.outputs.contract_dir_list }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get Soroban SDK and Rust Versions
+        run: |
+          rust_version=$(jq -r '.package."rust-version"' Cargo.toml) 
+          echo "Required Rust version: $rust_version"
+
+          if [ -z "$rust_version" ]; then
+            echo "Error: Rust version not found in Cargo.toml"
+            exit 1 
+          fi
+
+      - name: Setup Rust
+        run: |   
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source $HOME/.cargo/env
+          rustup install ${{ env.rust_version }} 
+          rustup default ${{ env.rust_version }}
+
+          rustup target add wasm32-unknown-unknown
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to setup Rust"
+            exit 1
+          fi
+
+      - name: Install binaryen
+        run: |
+          wget https://github.com/WebAssembly/binaryen/releases/download/version_101/binaryen-version_101-x86_64-linux.tar.gz
+          tar -xzf binaryen-version_101-x86_64-linux.tar.gz
+          cp binaryen-version_101/bin/wasm-opt /usr/local/bin/
+          rm -rf binaryen-version_101 binaryen-version_101-x86_64-linux.tar.gz
+
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to install binaryen"
+            exit 1
+          fi
+
+      - name: Run Tests
+        working-directory: ${{ matrix.contract_dir }} 
+        run: |
+          cargo test --target wasm32-unknown-unknown
+
+          if [ $? -ne 0 ]; then
+            echo "Error: Tests failed"
+            exit 1
+          fi 
+
+      - name: Build and Optimize
+        working-directory: ${{ matrix.contract_dir }} 
+        run: |
+          # Build the project
+          cargo build --target wasm32-unknown-unknown --release  
+
+          # Optimization steps
+          target_dir=$(cargo metadata --format-version=1 --no-deps | jq -r ".target_directory")
+          find ${target_dir}/wasm32-unknown-unknown/release -name "*.wasm" -exec cp {} /inspector/home/unoptimized.wasm \;
+          cd /inspector/home
+          wasm-opt -Oz unoptimized.wasm -o optimized.wasm
+
+          if [ $? -ne 0 ]; then
+            echo "Error: Build failed"
+            exit 1
+          fi
+
+          # Calculate SHA256 hash of optimized.wasm (use your preferred method)
+          release_hash=$(sha256sum /inspector/home/optimized.wasm | cut -d' ' -f1)  
+
+          # Get the package version and name
+          package_version=$(jq -r '.package.version' Cargo.toml)
+          package_name=$(jq -r '.package.name' Cargo.toml)
+
+          # Create a release directory
+          release_dir="release-$release_hash-$package_version-$package_name"
+          mkdir $release_dir
+
+          # Copy optimized.wasm into the release directory
+          cp optimized.wasm $release_dir/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: | 
+            release-*.tar.gz
+          name: Release ${{ env.release_hash }}-${{ env.package_version }}-${{ env.package_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+  
+      - name: Package Release
+        run: |
+           cd release-${{ env.release_hash }}-${{ env.package_version }}-${{ env.package_name }}
+           tar -czvf ../release-${{ env.release_hash }}-${{ env.package_version }}-${{ env.package_name }}.tar.gz *
