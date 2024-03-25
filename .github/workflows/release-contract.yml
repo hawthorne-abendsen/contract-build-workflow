@@ -19,7 +19,7 @@ jobs:
 
       - name: Get Soroban SDK and Rust Versions
         run: |
-          rust_version=$(jq -r '.package."rust-version"' Cargo.toml) 
+          rust_version=$(cargo metadata --no-deps --format-version=1 | grep -o "\"rust_version\":\"[^\"]*" | sed 's/"rust_version":"//') 
           echo "Required Rust version: $rust_version"
 
           if [ -z "$rust_version" ]; then
