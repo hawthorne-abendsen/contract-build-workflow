@@ -10,13 +10,19 @@ on:
 
 jobs:
   prepare_directories:
-      runs-on: ubuntu-latest
-      outputs:
-        contract_dir_list: ${{ steps.prepare.outputs.contract_dir_list }}
-      steps:
-        - id: prepare
-          name: Prepare Contract Directories
-          run: echo "CONTRACT_DIR_LIST=$(echo ${{ inputs.contract_dirs }} | tr ";" "\n")" >> $GITHUB_ENV
+    runs-on: ubuntu-latest
+    outputs:
+      contract_dir_list: ${{ steps.prepare.outputs.contract_dir_list }}
+    steps:
+      - id: prepare
+        name: Prepare Contract Directories
+        run: |
+          echo "CONTRACT_DIR_LIST=$(echo ${{ inputs.contract_dirs }} | tr ';' '\n' | xargs)" >> $GITHUB_ENV  
+  
+      - id: debug  
+        name: Debug Output
+        run: |
+          echo "Contract directories: ${{ steps.prepare.outputs.contract_dir_list }}"
     
   build:
     runs-on: ubuntu-latest
