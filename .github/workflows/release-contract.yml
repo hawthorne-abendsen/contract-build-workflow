@@ -10,9 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu:20.04 
-    container: 
-      image: ubuntu:20.04
+    runs-on: ubuntu:latest 
     strategy: 
         matrix:
           contract_dir: ${{ fromJson(inputs.contract_dirs) }}
