@@ -16,7 +16,9 @@ jobs:
     steps:
       - id: prepare
         name: Prepare Contract Directories
-        run: echo "contract_dir_list=$(echo ${{ inputs.contract_dirs }} | tr ';' '\n' | xargs)" >> $GITHUB_ENV 
+        run: |
+          echo "inputs.contract_dirs: ${{ inputs.contract_dirs }}"
+          echo "contract_dir_list=$(echo ${{ inputs.contract_dirs }} | tr ';' '\n' | xargs)" >> $GITHUB_ENV 
   
       - id: debug  
         name: Debug Output
