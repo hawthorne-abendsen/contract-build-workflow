@@ -10,25 +10,31 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu:20.04 
+    container: 
+      image: ubuntu:20.04
     strategy: 
         matrix:
           contract_dir: ${{ fromJson(inputs.contract_dirs) }}
     steps:
+      - name: Preinstall dependencies
+        run: |
+          apt-get update && \
+          apt-get install -y git curl wget jq build-essential && \
+          apt-get clean && \
+          rm -rf /var/lib/apt/lists/*
+
       - uses: actions/checkout@v3
         
       - name: Get Soroban SDK and Rust Versions
         run: |
-          rust_version=$(cargo metadata --no-deps --format-version=1 | grep -o "\"rust_version\":\"[^\"]*" | sed 's/"rust_version":"//') 
+          rust_version=$(sed -n '/\[package\]/,/^$/{/rust-version = /{s/rust-version = "\(.*\)"/\1/p;}}' Cargo.toml) 
           echo "Required Rust version: $rust_version"
 
           if [ -z "$rust_version" ]; then
             echo "Error: Rust version not found in Cargo.toml"
             exit 1 
           fi
-      
-      - name: Remove pre-installed Rust tools
-        run: rm -rf $HOME/.cargo/bin 
 
       - name: Setup Rust
         run: |   
@@ -57,6 +63,7 @@ jobs:
 
       - name: Run Tests
         working-directory: ${{ matrix.contract_dir }} 
+        if: matrix.contract_dir != '.'
         run: |
           cargo test --target wasm32-unknown-unknown
 
@@ -67,6 +74,7 @@ jobs:
 
       - name: Build and Optimize
         working-directory: ${{ matrix.contract_dir }} 
+        if: matrix.contract_dir != '.'
         run: |
           # Build the project
           cargo build --target wasm32-unknown-unknown --release  
