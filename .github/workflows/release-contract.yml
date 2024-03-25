@@ -18,8 +18,7 @@ jobs:
       - name: Preinstall dependencies
         run: |
           apt-get update && \
-          apt-get install -y git curl wget jq build-essential && \
-          apt-get clean
+          apt-get install -y git curl wget jq build-essential
 
       - uses: actions/checkout@v3
         
