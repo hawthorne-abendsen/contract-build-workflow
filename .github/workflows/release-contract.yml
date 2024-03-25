@@ -9,28 +9,11 @@ on:
         type: string
 
 jobs:
-  prepare_directories:
-    runs-on: ubuntu-latest
-    outputs:
-      contract_dir_list: ${{ steps.prepare.outputs.contract_dir_list }}
-    steps:
-      - id: prepare
-        name: Prepare Contract Directories
-        run: |
-          echo "inputs.contract_dirs: ${{ inputs.contract_dirs }}
-          echo "contract_dir_list=$(echo ${{ inputs.contract_dirs }} | tr ';' '\n' | xargs)
-          echo "::set-output name=contract_dir_list::$contract_dir_list"
-  
-      - id: debug  
-        name: Debug Output
-        run: |
-          echo "Contract directories: ${{ steps.prepare.outputs.contract_dir_list }}"
-    
   build:
     runs-on: ubuntu-latest
     strategy: 
         matrix:
-          contract_dir: ${{ needs.prepare_directories.outputs.contract_dir_list }}
+          contract_dir: ${{ fromJson(inputs.contract_dirs) }} 
     steps:
       - uses: actions/checkout@v3
 
