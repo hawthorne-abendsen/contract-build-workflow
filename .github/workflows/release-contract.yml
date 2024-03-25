@@ -16,7 +16,10 @@ jobs:
           contract_dir: ${{ fromJson(inputs.contract_dirs) }}
     steps:
       - uses: actions/checkout@v3
-
+      
+      - name: Remove pre-installed Rust tools
+        run: rm -rf $HOME/.cargo/bin 
+        
       - name: Get Soroban SDK and Rust Versions
         run: |
           rust_version=$(cargo metadata --no-deps --format-version=1 | grep -o "\"rust_version\":\"[^\"]*" | sed 's/"rust_version":"//') 
@@ -70,8 +73,8 @@ jobs:
 
           # Optimization steps
           target_dir=$(cargo metadata --format-version=1 --no-deps | jq -r ".target_directory")
-          find ${target_dir}/wasm32-unknown-unknown/release -name "*.wasm" -exec cp {} /inspector/home/unoptimized.wasm \;
-          cd /inspector/home
+          find ${target_dir}/wasm32-unknown-unknown/release -name "*.wasm" -exec cp {} $HOME/unoptimized.wasm \;
+          cd $HOME
           wasm-opt -Oz unoptimized.wasm -o optimized.wasm
 
           if [ $? -ne 0 ]; then
@@ -80,7 +83,7 @@ jobs:
           fi
 
           # Calculate SHA256 hash of optimized.wasm (use your preferred method)
-          release_hash=$(sha256sum /inspector/home/optimized.wasm | cut -d' ' -f1)  
+          release_hash=$(sha256sum $HOME/optimized.wasm | cut -d' ' -f1)  
 
           # Get the package version and name
           package_version=$(jq -r '.package.version' Cargo.toml)
