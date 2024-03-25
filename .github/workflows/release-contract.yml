@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy: 
         matrix:
-          contract_dir: ${{ fromJson(inputs.contract_dirs) }} 
+          contract_dir: ${{ fromJson('["' + replace(inputs.contract_dirs, ';', '","') + '"]')}}
     steps:
       - uses: actions/checkout@v3
 
