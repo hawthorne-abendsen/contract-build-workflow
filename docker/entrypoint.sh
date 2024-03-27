@@ -132,17 +132,7 @@ if [ -z "$PACKAGE_NAME" ] || [ -z "$PACKAGE_VERSION" ]; then
     exit 1
 fi
 
-# Clean the package name for the URL
-clean_for_url() {
-  local clean_name=$(echo "$1" | sed -E 's/[^[:alnum:]]+/_/g')
-  echo "$clean_name"
-}
-
-# Set the package name for the URL
-PACKAGE_NAME=$(clean_for_url $PACKAGE_NAME)
-PACKAGE_VERSION=$(clean_for_url $PACKAGE_VERSION)
-
-WASM_FILE_NAME="${PACKAGE_NAME}_${PACKAGE_VERSION}.wasm"
+WASM_FILE_NAME="${PACKAGE_NAME}_v${PACKAGE_VERSION}.wasm"
 
 # Find the .wasm file and copy it as unoptimized.wasm for hash calculation
 find ${TARGET_DIR}/wasm32-unknown-unknown/release -name "*.wasm" -exec cp {} ${MOUNT_DIR}/release/${WASM_FILE_NAME} \;
