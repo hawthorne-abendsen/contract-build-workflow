@@ -1,0 +1,27 @@
+name: Build, Package and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build_and_docker:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Build and push Docker image
+      run: |
+        docker login -u hawthorne --password-stdin <<< ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+
+        docker build -f ./docker/Dockerfile -t contract-build .
+
+        docker tag contract-build hawthorne/contract-build:${{ github.ref_name }}
+        docker push hawthorne/contract-build:${{ github.ref_name }}
+
+        # Push latest only if LATEST_PUSH is true
+        docker tag contract-build hawthorne/contract-build:latest
+        docker push hawthorne/contract-build:latest

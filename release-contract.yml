@@ -1,0 +1,51 @@
+name: Build and Optimize Contract
+
+on:
+  workflow_call:
+    inputs:
+      contract_dir:
+        description: 'Relative path to the contract directory'
+        type: string
+        default: '.'
+      release_name: 
+        description: 'Name for the release'
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu:latest 
+    steps:
+      - uses: actions/checkout@v3
+        
+      - name: Run docker container
+        uses: docker://hawthorne/contract-build:latest
+        with:
+          args: |
+            - v ${{ github.workspace }}:/inspector/home
+            - e CONTRACT_DIR:${{ inputs.contract_dir }}
+
+      - name: Archive dist directory into zip
+        run: |
+          zip -r release.zip ${{ github.workspace }}/release
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ inputs.release_name }}
+          release_name: Release ${{ inputs.release_name }}
+          draft: false
+          prerelease: false
+  
+      - name: Upload release.zip to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release.zip
+          asset_name: release.zip
+          asset_content_type: application/gzip
