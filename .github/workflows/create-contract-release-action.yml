@@ -29,9 +29,11 @@ jobs:
       - name: Get wasm file name
         run: |
           cd ${{ github.workspace }}/release
-          echo "WASM_FILE_NAME=$(basename $(find -type f -name "*.wasm"))" >> $GITHUB_ENV
+          wasm_file=$(find -type f -name "*.wasm")
+          echo "WASM_FILE_NAME=$(basename $wasm_file)" >> $GITHUB_ENV  
+          echo "WASM_FILE_SHA256=$(sha256sum $wasm_file | cut -d ' ' -f 1)" >> $GITHUB_ENV 
 
-      - name: Create Release
+      - name: Create release ${{ env.WASM_FILE_SHA256 }}
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -42,7 +44,7 @@ jobs:
           draft: false
           prerelease: false
   
-      - name: Upload release.zip to Release
+      - name: Upload wasm to release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.release_token }}
