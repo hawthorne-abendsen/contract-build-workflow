@@ -28,7 +28,7 @@ jobs:
 
       - name: Archive dist directory into zip
         run: |
-          zip -r release.zip ${{ github.workspace }}/release
+          zip -r -D release.zip ${{ github.workspace }}/release
 
       - name: Create Release
         id: create_release
