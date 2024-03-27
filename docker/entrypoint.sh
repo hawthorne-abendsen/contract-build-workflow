@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# check if the required environment variables are set
-if [ -z "$CONTRACT_DIR" ]; then
-    echo "CONTRACT_DIR is not set. Exiting."
-    exit 1
-fi
-
 # Set mount directory
 MOUNT_DIR="/inspector/home"
 
@@ -17,8 +11,8 @@ fi
 
 cd $MOUNT_DIR
 
-# Navigate to the contract directory
-if [ "${CONTRACT_DIR}" != "." ]; then
+# Navigate to the contract directory if defined
+if [ "${CONTRACT_DIR}" ]; then
     # Verify that the contract directory exists
     if [ ! -d "${CONTRACT_DIR}" ]; then
         echo "ERROR: Contract directory ${CONTRACT_DIR} does not exist"

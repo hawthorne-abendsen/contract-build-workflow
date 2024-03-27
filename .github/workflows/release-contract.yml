@@ -6,7 +6,7 @@ on:
       contract_dir:
         description: 'Relative path to the contract directory'
         type: string
-        default: '.'
+        required: false
       release_name: 
         description: 'Name for the release'
         required: true
@@ -18,13 +18,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Verify the contract directory
-        run: |
-          if [ ! -d ${{ inputs.contract_dir }} ]; then
-            echo "Directory ${{ inputs.contract_dir }} does not exist"
-            exit 1
-          fi
 
       - name: Run docker container
         uses: docker://hawthorne/contract-build:latest
