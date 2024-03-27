@@ -11,6 +11,10 @@ on:
         description: 'Name for the release'
         required: true
         type: string
+      github_token:
+        description: 'Github token'
+        required: true
+        type: string
 
 jobs:
   build:
@@ -30,7 +34,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ inputs.github_token }}
         with:
           tag_name: ${{ inputs.release_name }}
           release_name: Release ${{ inputs.release_name }}
@@ -40,7 +44,7 @@ jobs:
       - name: Upload release.zip to Release
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ inputs.github_token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./release.zip
