@@ -22,8 +22,8 @@ jobs:
         uses: docker://hawthorne/contract-build:latest
         with:
           args: |
-            - v ${{ github.workspace }}:/inspector/home
             - e CONTRACT_DIR:${{ inputs.contract_dir }}
+            - v ${{ github.workspace }}:/inspector/home
 
       - name: Archive dist directory into zip
         run: |
