@@ -26,10 +26,10 @@ jobs:
       - name: Run docker container
         run: docker run --rm -e CONTRACT_DIR=${{ inputs.contract_dir }} -v "${{ github.workspace }}:/inspector/home" hawthorne/contract-build:latest
 
-      - name: Archive dist directory into zip
+      - name: Get wasm file name
         run: |
           cd ${{ github.workspace }}/release
-          zip -r -D ../release.zip *
+          echo "WASM_FILE_NAME=$(basename $(find -type f -name "*.wasm"))" >> $GITHUB_ENV
 
       - name: Create Release
         id: create_release
@@ -48,6 +48,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.release_token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release.zip
-          asset_name: release.zip
-          asset_content_type: application/gzip
+          asset_path: ${{ github.workspace }}/release/${{ env.WASM_FILE_NAME }}
+          asset_name: ${{ env.WASM_FILE_NAME }}
+          asset_content_type: application/wasm

@@ -122,11 +122,33 @@ if [ ! -d "${MOUNT_DIR}/release" ]; then
     exit 1
 fi
 
+# Get the package name and version
+PACKAGE_NAME=$(grep -m1 '^name =' Cargo.toml | sed -E 's/^name = "(.*)"$/\1/')
+PACKAGE_VERSION=$(grep -m1 '^version =' Cargo.toml | sed -E 's/^version = "(.*)"$/\1/')
+
+# Verify that the package name and version were found
+if [ -z "$PACKAGE_NAME" ] || [ -z "$PACKAGE_VERSION" ]; then
+    echo "ERROR: Failed to get the package name and version"
+    exit 1
+fi
+
+# Clean the package name for the URL
+clean_for_url() {
+  local clean_name=$(echo "$1" | sed -E 's/[^[:alnum:]]+/_/g')
+  echo "$clean_name"
+}
+
+# Set the package name for the URL
+PACKAGE_NAME=$(clean_for_url $PACKAGE_NAME)
+PACKAGE_VERSION=$(clean_for_url $PACKAGE_VERSION)
+
+WASM_FILE_NAME="${PACKAGE_NAME}_${PACKAGE_VERSION}.wasm"
+
 # Find the .wasm file and copy it as unoptimized.wasm for hash calculation
-find ${TARGET_DIR}/wasm32-unknown-unknown/release -name "*.wasm" -exec cp {} ${MOUNT_DIR}/release/unoptimized.wasm \;
+find ${TARGET_DIR}/wasm32-unknown-unknown/release -name "*.wasm" -exec cp {} ${MOUNT_DIR}/release/${WASM_FILE_NAME} \;
 
 # Verify that the unoptimized.wasm file exists
-if [ ! -f "$MOUNT_DIR/release/unoptimized.wasm" ]; then
+if [ ! -f "$MOUNT_DIR/release/${WASM_FILE_NAME}" ]; then
     echo "ERROR: unoptimized.wasm file does not exist"
     exit 1
 fi
@@ -135,22 +157,10 @@ fi
 cd ${MOUNT_DIR}/release
 
 # Optimize the WASM file
-wasm-opt -Oz unoptimized.wasm -o optimized.wasm
+wasm-opt -Oz ${WASM_FILE_NAME} -o ${WASM_FILE_NAME}
 
 # Verify that the optimized.wasm file exists
-if [ ! -f "${MOUNT_DIR}/release/optimized.wasm" ]; then
+if [ ! -f "${MOUNT_DIR}/release/${WASM_FILE_NAME}" ]; then
     echo "ERROR: optimized.wasm file does not exist"
     exit 1
 fi
-
-# Calculate the hash of the optimized.wasm file and set it to hash
-HASH=$(sha256sum optimized.wasm | cut -d ' ' -f 1)
-
-# Verify that the hash was calculated
-if [ -z "$HASH" ]; then
-    echo "ERROR: Failed to calculate the hash"
-    exit 1
-fi
-
-# Create the contract metadata file with the hash, wasm file name, rust version and sdk version
-echo "{\"hash\":\"$HASH\",\"wasm\":\"optimized.wasm\",\"rust\":\"$RUST_VERSION\"}" > contract_metadata.json
