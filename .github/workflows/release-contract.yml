@@ -20,11 +20,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run docker container
-        uses: docker://hawthorne/contract-build:latest
+        uses: addnab/docker-run-action@v3
         with:
-          args: |
-            - e CONTRACT_DIR:${{ inputs.contract_dir }}
-            - v ${{ github.workspace }}:/inspector/home
+          image: hawthorne/contract-build:latest
+          options: -e CONTRACT_DIR:${{ inputs.contract_dir }} -v ${{ github.workspace }}:/inspector/home
 
       - name: Archive dist directory into zip
         run: |
