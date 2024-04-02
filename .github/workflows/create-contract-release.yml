@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run docker container
-        run: docker run --rm -e CONTRACT_DIR=${{ inputs.contract_dir }} -v "${{ github.workspace }}:/inspector/home" hawthorne/contract-build:latest
+        run: docker run --rm -e CONTRACT_DIR=${{ inputs.contract_dir }} -v "${{ github.workspace }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:latest
 
       - name: Get wasm file name
         run: |
