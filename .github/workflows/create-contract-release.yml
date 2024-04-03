@@ -60,10 +60,8 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ env.WASM_FILE_NAME }}
-          path: /release/${{ env.WASM_FILE_NAME }}
-
-      - name: Delete directory
-        run: rm -rf ${{ github.workspace }}/${{ strategy.job-index }}
+          path: ${{ github.workspace }}/${{ strategy.job-index }}/release/${{ env.WASM_FILE_NAME }}
+          if-no-files-found: error
 
   release:
     needs: build
