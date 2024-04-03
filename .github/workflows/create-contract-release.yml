@@ -50,6 +50,7 @@ jobs:
         run: |
           cd ${{ github.workspace }}/${{ strategy.job-index }}/release
           wasm_file=$(find -type f -name "*.wasm")
+          cp $wasm_file ${{ github.workspace }}/${{ strategy.job-index }}
           echo "WASM_FILE_NAME=$(basename $wasm_file)" >> $GITHUB_ENV  
           echo "WASM_FILE_SHA256=$(sha256sum $wasm_file | cut -d ' ' -f 1)" >> $GITHUB_ENV 
       
@@ -57,7 +58,7 @@ jobs:
         run: echo ${{ env.WASM_FILE_NAME }}
       
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.WASM_FILE_NAME }}
           path: ${{ github.workspace }}/${{ strategy.job-index }}/release/${{ env.WASM_FILE_NAME }}
@@ -69,6 +70,8 @@ jobs:
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
         
       - name: Create release
         uses: softprops/action-gh-release@v2
