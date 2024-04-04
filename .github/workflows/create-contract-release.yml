@@ -36,19 +36,26 @@ jobs:
             echo "CHECKOUT_DIRECTORY=${{ matrix.directory }}" >> $GITHUB_ENV
           fi
 
+      - name: Verify that checkout directory doesn't exist
+        run: |
+          if [[ -d ${{ github.workspace }}/build_${{ strategy.job-index }} ]]; then
+            echo "Directory ${{ github.workspace }}/${{ strategy.job-index }} already exists"
+            exit 1
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          path: ${{ strategy.job-index }}
+          path: build_${{ strategy.job-index }}
 
       - name: Run docker container
-        working-directory: ${{ github.workspace }}/${{ strategy.job-index }}
-        run: docker run --rm -e CONTRACT_DIR=${{ matrix.directory }} -v "${{ github.workspace }}/${{ strategy.job-index }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:v0.6.5
+        working-directory: ${{ github.workspace }}/build_${{ strategy.job-index }}
+        run: docker run --rm -e CONTRACT_DIR=${{ matrix.directory }} -v "${{ github.workspace }}/build_${{ strategy.job-index }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:v0.6.6
 
       - name: Get wasm file name
-        working-directory: ${{ github.workspace }}/${{ strategy.job-index }}
+        working-directory: ${{ github.workspace }}/build_${{ strategy.job-index }}
         run: |
-          cd ${{ github.workspace }}/${{ strategy.job-index }}/release
+          cd ${{ github.workspace }}/build_${{ strategy.job-index }}/release
           wasm_file=$(find -type f -name "*.wasm")
           cp $wasm_file ${{ github.workspace }}/${{ strategy.job-index }}
           echo "WASM_FILE_NAME=$(basename $wasm_file)" >> $GITHUB_ENV  

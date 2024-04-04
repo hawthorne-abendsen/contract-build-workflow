@@ -104,6 +104,12 @@ fi
 
 echo "Rustc Version:" $(rustc --version) && echo "Cargo Version:" $(cargo --version)
 
+# Check if the Cargo.toml file exists
+if [ ! -f "Cargo.toml" ]; then
+    echo "ERROR: Cargo.toml file does not exist"
+    exit 1
+fi
+
 # Get the target directory
 TARGET_DIR=$(cargo metadata --format-version=1 --no-deps | jq -r ".target_directory")
 
