@@ -1,62 +1,73 @@
-# Soroban Smart Contract Build and Release Workflow
+# Soroban Smart Contract Compilation Workflow
 
-This reusable GitHub Actions workflow streamlines the building and release process for smart contracts. It's designed to automate contract compilation, generate WebAssembly (.wasm) artifacts, and create GitHub release with attached build artifacts.
+Reusable GitHub Actions workflow that streamlines the compilation and release process of Stellar smart contracts for Soroban WASM runtime.
 
-## Key Features
+When triggered, this workflow:
+- Compiles a smart contract (or multiple contracts) in the repository
+- Creates an optimized WebAssembly file ready to be deployed to Soroban
+- Publishes GitHub release with attached build artifacts
+- Includes SHA256 hashes of complied WASM files into actions output for further verification
 
-- **Multiple Contract Support**: Handles builds for multiple contract directories simultaneously.
-- **Release Automation**: Creates GitHub releases, including a tag name, description (optional), and automatically attaches compiled .wasm files.
-- **Hash Verification**: Includes SHA256 hashes of the .wasm files in build output for verification.
+## Configuration
 
-## Usage
+### Prerequisites
 
-### Workflow Inputs and Secrets
-```yaml
-- uses: stellar-expert/soroban-build.action/.github/workflows/create-contract-release.yml@v1.0.0
-  with:
-    # JSON-encoded array of relative path to the contract directories. Empty string for root directory. 
-    # Default is '[""]'
-    contract_dirs:
+- Create a GiHhub Actions workflow file `.github/workflows/release.yml` in your repository.
+- Decide how the compliation workflow will be triggered. The recommended way is to configure workflow activation on git tag creation. This should simplify versioning and ensure unique release names.
 
-    # The name of the release. 
-    # Required.
-    release_name:
+### Workflow inputs and secrets
 
-    # Description for the release.
-    # Optional.
-    release_description:
-  secrets:
-    # GitHub token for creating releases.
-    # Required.
-    release_token:
-```
+Basic compilation workflow path:  
+`stellar-expert/soroban-build-workflow/.github/workflows/release.yml@main`
 
-### Example Workflow
+The workflow expects the following inputs in the `with` section:
+- `release_name` (required) - Templated release name that includes a release version variable. E.g. `${{ github.ref_name }}`
+- `build_path` - array of directory relative paths to build (use `""` for repository root directory), defaults to `'[""]'`
+- `release_description` - optional description text to attach
 
-1. Create a new workflow file (e.g., `.github/workflows/release.yml`) in your repository.
-2. Trigger the workflow by pushing a new tag to the repository.
+### Example workflow for the reporisotry with a single contract
 
 ```yaml
-name: Build and Release
-
+name: Build and Release  # name it whatever you like
 on:
   push: 
     tags:
-      - '*'
-
+      - 'v*'  # triggered whenever a new tag (previxed with "v") is pushed to the repository
 jobs:
   release_contracts:
-    uses: stellar-expert/soroban-build.action/.github/workflows/create-contract-release.yml@v1.0.0
+    uses: stellar-expert/soroban-build-workflow/.github/workflows/release.yml@main
     with:
-        release_name: 'v1.0.0' # Release name
-        release_description: 'Initial release' # Release description
-        contract_dirs: '["contract1", "contract2", ""]' # List of contract directories to build. Empty string for root directory.
-    secrets:
-        release_token: ${{ secrets.GITHUB_TOKEN }}
+      release_name: ${{ github.ref_name }}    # use git tag as unique release name
+      release_description: 'Contract release' # some boring placeholder text to attach
+      build_path:
+        - 'src/my-awesome-contract'  # relative path to your really awesome contract
+    secrets:  # the authentication token will be automatically created by GitHub
+      release_token: ${{ secrets.GITHUB_TOKEN }} # don't modify this line
 ```
 
-## Important Notes
+
+### Building multiple contracts
+
+To build multiple contracts at once, include all relative paths of the subdirectories containing contract sources
+to the `build_path` array. For example,
+
+```yaml
+jobs:
+  release_contracts:
+    with:
+      build_path:
+        - 'src/token-contract'   # build contract in the "/src/token-contract" directory
+        - 'src/dao/dao-contract' # build contract in the "/src/dao/dao-contract" directory
+        - ''                     # build contract in the repository root directory
+```
+
+## Notes
+
 - The workflow assumes that each contract directory contains the necessary structure and files for your build process.
-- The workflow doesn't run tests. The workflow focuses solely on compilation and release; it does not include testing steps.
-- The workflow doesn't check the contract logic or the build logic.
-- Target contracts cannot have the same name and version. This restriction is necessary to avoid conflicts during the release process.
+- If you want to run your contract tests automatically before deploying the contract, add corresponding action invocation
+  before the `release_contracts` job to make sure that broken contracts won't end up in published releases.
+- In case of the multi-contract repository setup, contracts shouldn't have the same name (defined in TOML file) and version
+  to avoid conflicts during the release process.
+- To enable automatic contract source validation process, contracts should be deployed to Stellar Network directly
+  from a complied GitHub realese generated by this workflow. Otherwise the deployed contract hash may not
+  match the release artifcats due to the compilation environment variations.
