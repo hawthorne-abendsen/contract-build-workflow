@@ -43,7 +43,7 @@ jobs:
 
       - name: Run docker container
         working-directory: ${{ github.workspace }}/${{ strategy.job-index }}
-        run: docker run --rm -e CONTRACT_DIR=${{ matrix.directory }} -v "${{ github.workspace }}/${{ strategy.job-index }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:v0.6.3
+        run: docker run --rm -e CONTRACT_DIR=${{ matrix.directory }} -v "${{ github.workspace }}/${{ strategy.job-index }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:v0.6.4
 
       - name: Get wasm file name
         working-directory: ${{ github.workspace }}/${{ strategy.job-index }}
@@ -54,7 +54,7 @@ jobs:
           echo "WASM_FILE_NAME=$(basename $wasm_file)" >> $GITHUB_ENV  
           echo "WASM_FILE_SHA256=$(sha256sum $wasm_file | cut -d ' ' -f 1)" >> $GITHUB_ENV 
       
-      - name: Wasm file from directory ${{ matrix.directory }} with hash ${{ env.WASM_FILE_SHA256 }} created
+      - name: Wasm file from directory "${{ matrix.directory }}" with hash ${{ env.WASM_FILE_SHA256 }} created
         run: echo ${{ env.WASM_FILE_NAME }}
       
       - name: Upload artifact
