@@ -30,8 +30,9 @@ jobs:
     steps:
       - name: Set build directory name
         run: |
-          echo "BUILD_DIR_NAME=build_${{ strategy.job-index }}" >> $GITHUB_ENV
-          echo "BUILD_DIR_PATH=${{ github.workspace }}/${{ env.BUILD_DIR_NAME }}" >> $GITHUB_ENV
+          build_dir_name="build_${{ strategy.job-index }}"
+          echo "BUILD_DIR_NAME=$build_dir_name" >> $GITHUB_ENV
+          echo "BUILD_DIR_PATH=${{ github.workspace }}/$build_dir_name" >> $GITHUB_ENV
 
       - name: Verify that checkout directory doesn't exist
         run: |
@@ -47,7 +48,7 @@ jobs:
 
       - name: Run docker container
         working-directory: ${{ env.BUILD_DIR_PATH }}
-        run: docker run --rm -e CONTRACT_DIR=${{ matrix.directory }} -v "${{ env.BUILD_DIR_PATH }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:v0.6.7
+        run: docker run --rm -e CONTRACT_DIR=${{ matrix.directory }} -v "${{ env.BUILD_DIR_PATH }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:v0.6.8
 
       - name: Get wasm file name
         working-directory: ${{ env.BUILD_DIR_PATH }}
