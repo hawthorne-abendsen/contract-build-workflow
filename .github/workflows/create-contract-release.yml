@@ -43,7 +43,7 @@ jobs:
 
       - name: Run docker container
         working-directory: ${{ github.workspace }}/${{ strategy.job-index }}
-        run: docker run --rm -e CONTRACT_DIR=${{ matrix.directory }} -v "${{ github.workspace }}/${{ strategy.job-index }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:v0.6.4
+        run: docker run --rm -e CONTRACT_DIR=${{ matrix.directory }} -v "${{ github.workspace }}/${{ strategy.job-index }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:v0.6.5
 
       - name: Get wasm file name
         working-directory: ${{ github.workspace }}/${{ strategy.job-index }}

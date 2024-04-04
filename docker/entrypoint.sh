@@ -36,7 +36,7 @@ RUST_VERSION=$(sed -n '/\[package\]/,/^$/{/rust-version = /{s/rust-version = "\(
 
 # If rust version is not found in Cargo.toml, set it to the default version
 if [ -z "$RUST_VERSION" ]; then
-    RUST_VERSION="stable"
+    RUST_VERSION="beta"
 fi
 echo "Required Rust version: $RUST_VERSION"
 
