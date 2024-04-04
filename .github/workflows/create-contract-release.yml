@@ -28,36 +28,33 @@ jobs:
       matrix:
         directory: ${{ fromJson(inputs.contract_dirs) }}
     steps:
-      - name: Determine checkout directory
+      - name: Set build directory name
         run: |
-          if [[ "${{ matrix.directory }}" == "" ]]; then
-            echo "CHECKOUT_DIRECTORY=root" >> $GITHUB_ENV
-          else
-            echo "CHECKOUT_DIRECTORY=${{ matrix.directory }}" >> $GITHUB_ENV
-          fi
+          echo "BUILD_DIR_NAME=build_${{ strategy.job-index }}" >> $GITHUB_ENV
+          echo "BUILD_DIR_PATH=${{ github.workspace }}/${{ env.BUILD_DIR_NAME }}" >> $GITHUB_ENV
 
       - name: Verify that checkout directory doesn't exist
         run: |
-          if [[ -d ${{ github.workspace }}/build_${{ strategy.job-index }} ]]; then
-            echo "Directory ${{ github.workspace }}/${{ strategy.job-index }} already exists"
+          if [[ -d ${{ env.BUILD_DIR_PATH }} ]]; then
+            echo "Directory ${{ env.BUILD_DIR_PATH }} already exists"
             exit 1
           fi
 
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          path: build_${{ strategy.job-index }}
+          path: ${{ env.BUILD_DIR_NAME }}
 
       - name: Run docker container
-        working-directory: ${{ github.workspace }}/build_${{ strategy.job-index }}
-        run: docker run --rm -e CONTRACT_DIR=${{ matrix.directory }} -v "${{ github.workspace }}/build_${{ strategy.job-index }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:v0.6.6
+        working-directory: ${{ env.BUILD_DIR_PATH }}
+        run: docker run --rm -e CONTRACT_DIR=${{ matrix.directory }} -v "${{ env.BUILD_DIR_PATH }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:v0.6.7
 
       - name: Get wasm file name
-        working-directory: ${{ github.workspace }}/build_${{ strategy.job-index }}
+        working-directory: ${{ env.BUILD_DIR_PATH }}
         run: |
-          cd ${{ github.workspace }}/build_${{ strategy.job-index }}/release
+          cd ${{ env.BUILD_DIR_PATH }}/release
           wasm_file=$(find -type f -name "*.wasm")
-          cp $wasm_file ${{ github.workspace }}/${{ strategy.job-index }}
+          cp $wasm_file ${{ env.BUILD_DIR_PATH }}
           echo "WASM_FILE_NAME=$(basename $wasm_file)" >> $GITHUB_ENV  
           echo "WASM_FILE_SHA256=$(sha256sum $wasm_file | cut -d ' ' -f 1)" >> $GITHUB_ENV 
       
@@ -68,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.WASM_FILE_NAME }}
-          path: ${{ github.workspace }}/${{ strategy.job-index }}/release/${{ env.WASM_FILE_NAME }}
+          path: ${{ env.BUILD_DIR_PATH }}/release/${{ env.WASM_FILE_NAME }}
           if-no-files-found: error
 
   release:
