@@ -21,9 +21,9 @@ Basic compilation workflow path:
 `stellar-expert/soroban-build-workflow/.github/workflows/release.yml@main`
 
 The workflow expects the following inputs in the `with` section:
-- `release_name` (required) - Templated release name that includes a release version variable. E.g. `${{ github.ref_name }}`
-- `build_path` - array of directory relative paths to build (use `""` for repository root directory), defaults to `'[""]'`
-- `release_description` - optional description text to attach
+- `release_name` (required) - release name template that includes a release version variable, e.g. `${{ github.ref_name }}`
+- `build_path` - array of contract relative paths to compile, defaults to the repository root directory
+- `release_description` - optional text to attach to a relase description
 
 ### Example workflow for the reporisotry with a single contract
 
