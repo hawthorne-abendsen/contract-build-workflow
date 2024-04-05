@@ -25,7 +25,7 @@ The workflow expects the following inputs in the `with` section:
 - `build_path` - array of contract relative paths to compile, defaults to the repository root directory
 - `release_description` - optional text to attach to a relase description
 
-### Example workflow for the reporisotry with a single contract
+### Basic workflow for the reporisotry with a single contract
 
 ```yaml
 name: Build and Release  # name it whatever you like
@@ -37,13 +37,12 @@ jobs:
   release_contracts:
     uses: stellar-expert/soroban-build-workflow/.github/workflows/release.yml@main
     with:
-      release_name: ${{ github.ref_name }}    # use git tag as unique release name
-      release_description: 'Contract release' # some boring placeholder text to attach
+      release_name: ${{ github.ref_name }}       # use git tag as unique release name
+      release_description: 'Contract release'    # some boring placeholder text to attach
       build_path: '["src/my-awesome-contract"]'  # relative path to your really awesome contract
     secrets:  # the authentication token will be automatically created by GitHub
       release_token: ${{ secrets.GITHUB_TOKEN }} # don't modify this line
 ```
-
 
 ### Building multiple contracts
 
@@ -53,8 +52,27 @@ to the `build_path` array. For example,
 ```yaml
 jobs:
   release_contracts:
+    with: # build contracts located in "/src/token", "/src/dao/contract", and the repository root directory
+      build_path: '["src/token", "src/dao/dao", ""]'   
+```
+
+### Triggering build process manually
+
+Triggering this workflow manually requires a unique release name prompt. Replace the trigger condition in config
+and update `release_name` to utilize the value from the prompt.
+
+```yaml
+on:
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: 'Unique release name'
+        required: true
+        type: string
+jobs:
+  release-contract:
     with:
-      build_path: '["src/token-contract", "src/dao/dao-contract", ""]'   # build contract in the "/src/token-contract", "/src/dao/dao-contract" and the repository root directory
+      release_name: ${{ github.event.inputs.release_name }}
 ```
 
 ## Notes
