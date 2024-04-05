@@ -34,6 +34,7 @@ jobs:
         tags: |
           ghcr.io/${{ github.repository }}:${{ github.sha }}
           ghcr.io/${{ github.repository }}:${{ env.VERSION_TAG }}
+          ghcr.io/${{ github.repository }}:latest
 
     - name: Create Release
       id: create_release

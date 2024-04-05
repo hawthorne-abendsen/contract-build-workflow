@@ -39,8 +39,7 @@ jobs:
     with:
       release_name: ${{ github.ref_name }}    # use git tag as unique release name
       release_description: 'Contract release' # some boring placeholder text to attach
-      build_path:
-        - 'src/my-awesome-contract'  # relative path to your really awesome contract
+      build_path: '["src/my-awesome-contract"]'  # relative path to your really awesome contract
     secrets:  # the authentication token will be automatically created by GitHub
       release_token: ${{ secrets.GITHUB_TOKEN }} # don't modify this line
 ```
@@ -55,10 +54,7 @@ to the `build_path` array. For example,
 jobs:
   release_contracts:
     with:
-      build_path:
-        - 'src/token-contract'   # build contract in the "/src/token-contract" directory
-        - 'src/dao/dao-contract' # build contract in the "/src/dao/dao-contract" directory
-        - ''                     # build contract in the repository root directory
+      build_path: '["src/token-contract", "src/dao/dao-contract", ""]'   # build contract in the "/src/token-contract", "/src/dao/dao-contract" and the repository root directory
 ```
 
 ## Notes
