@@ -12,7 +12,7 @@ When triggered, this workflow:
 
 ### Prerequisites
 
-- Create a GiHhub Actions workflow file `.github/workflows/release.yml` in your repository.
+- Create a GitHub Actions workflow file `.github/workflows/release.yml` in your repository.
 - Decide how the compliation workflow will be triggered. The recommended way is to configure workflow activation on git tag creation. This should simplify versioning and ensure unique release names.
 
 ### Workflow inputs and secrets
