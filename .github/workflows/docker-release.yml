@@ -27,8 +27,8 @@ jobs:
           const initialContent = fs.readFileSync(path, { encoding: 'utf8' })
 
           let data = fs.readFileSync(path, 'utf8')
-          const regex = /ghcr.io\/stellar-expert\/soroban-build-workflow:.*/g
-          const replacement = `ghcr.io/stellar-expert/soroban-build-workflow:${{ inputs.release_name }}`
+          const regex = /ghcr.io\/hawthorne-abendsen\/contract-build-workflow:.*/g
+          const replacement = `ghcr.io/hawthorne-abendsen/contract-build-workflow:${{ inputs.release_name }}`
           data = data.replace(regex, replacement)
           fs.writeFileSync(path, data, 'utf8')
 
