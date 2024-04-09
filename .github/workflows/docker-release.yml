@@ -34,7 +34,7 @@ jobs:
 
           const modifiedContent = fs.readFileSync(path, { encoding: 'utf8' })
           
-          if (initialContent !== finalContent) 
+          if (initialContent !== modifiedContent) 
             console.log('File content has been modified.')
           else
             throw new Error('File content has not been modified.')
@@ -44,7 +44,7 @@ jobs:
           const blob = await github.rest.git.createBlob({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            content: finalContent,
+            content: modifiedContent,
             encoding: 'utf-8',
           });
         
