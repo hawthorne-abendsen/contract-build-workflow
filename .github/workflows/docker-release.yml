@@ -18,73 +18,27 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        persist-credentials: false
 
-    - name: Update version in YAML file, commit and push changes
-      uses: actions/github-script@v6
+    - name: Configure git
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+
+    - name: Update soroban-build-workflow version
+      run: sed -i 's/ghcr.io\/hawthorne-abendsen\/contract-build-workflow:latest/ghcr.io\/hawthorne-abendsen\/contract-build-workflow:${{ inputs.release_name }}/' .github/workflows/release.yml
+
+    - name: Commit and push changes using gh
+      run: |
+        if git diff --exit-code; then
+          echo "No changes to commit."
+          exit 0
+        fi
+        git add .github/workflows/release.yml
+        git commit -m "Update version to ${{ inputs.release_name }}"
+        gh auth setup-git
+        git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        script: |
-          const fs = require('fs');
-          const path = '.github/workflows/release.yml'
-          const initialContent = fs.readFileSync(path, { encoding: 'utf8' })
-
-          let data = fs.readFileSync(path, 'utf8')
-          const regex = /ghcr.io\/hawthorne-abendsen\/contract-build-workflow:.*/g
-          const replacement = `ghcr.io/hawthorne-abendsen/contract-build-workflow:${{ inputs.release_name }}`
-          data = data.replace(regex, replacement)
-          fs.writeFileSync(path, data, 'utf8')
-
-          const modifiedContent = fs.readFileSync(path, { encoding: 'utf8' })
-          
-          if (initialContent !== modifiedContent) 
-            console.log('File content has been modified.')
-          else
-            throw new Error('File content has not been modified.')
-
-          console.log(`${context.ref}: ${context.sha}`)
-
-          const blob = await github.rest.git.createBlob({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            content: modifiedContent,
-            encoding: 'utf-8',
-          })
-
-          const { data: commitData } = await github.rest.git.getCommit({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            commit_sha: context.sha,
-          })
-          
-          const { data: treeData } = await github.rest.git.createTree({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            base_tree: commitData.tree.sha,
-            tree: [{
-              path: '.github/workflows/release.yml',
-              mode: '100644',
-              type: 'blob',
-              sha: blob.data.sha,
-            }],
-          })
-          
-          const { data: newCommit } = await github.rest.git.createCommit({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            message: `Update version to ${{ inputs.release_name }}`,
-            tree: treeData.sha,
-            parents: [commitSha],
-          })
-          
-          await github.rest.git.updateRef({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            ref: 'refs/heads/main',
-            sha: newCommit.sha,
-          })
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2 
