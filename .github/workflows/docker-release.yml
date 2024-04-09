@@ -6,17 +6,20 @@ on:
       release_name:
         description: 'Name for the release'
         required: true
-        type: string              
+        type: string
+      
+permissions:
+  contents: write
 
 jobs:
   build_and_docker:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Update version in YAML file, commit and push changes
       uses: actions/github-script@v6
