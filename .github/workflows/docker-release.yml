@@ -29,16 +29,16 @@ jobs:
           const fs = require('fs');
           const path = '.github/workflows/release.yml'
           // Check if file was modified
-          if (fs.existsSync(path) && git.status(['--porcelain', path]).trim()) {
+          if (fs.existsSync(path) && github.rest.git.status(['--porcelain', path]).trim()) {
             await github.rest.git.createCommit({
               owner: context.repo.owner,
               repo: context.repo.repo,
               message: `Update version to ${{ inputs.release_name }}`,
-              tree: git.hashObject({path: path, type: 'blob', w: true}).sha,
-              parents: [await git.getRef({ref: 'heads/main'}).object.sha]
+              tree: github.rest.git.hashObject({path: path, type: 'blob', w: true}).sha,
+              parents: [await github.rest.git.getRef({ref: 'heads/main'}).object.sha]
             })
             // Push the commit
-            await git.push({
+            await github.rest.git.push({
               ref: 'refs/heads/main',
               force: false
             })
