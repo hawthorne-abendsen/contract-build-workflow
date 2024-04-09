@@ -25,6 +25,15 @@ RUN rustup target add wasm32-unknown-unknown
 # Install soroban-cli 
 RUN cargo install --locked soroban-cli --features opt
 
+# Print the version of rustc
+RUN rustc --version
+
+# Print the version of cargo
+RUN cargo --version
+
+# Print the version of soroban-cli
+RUN soroban --version
+
 # Specify the contract directory
 ENV CONTRACT_DIR=${CONTRACT_DIR}
 

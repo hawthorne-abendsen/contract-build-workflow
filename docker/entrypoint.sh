@@ -26,6 +26,15 @@ if [ "${CONTRACT_DIR}" ]; then
     ls -la
 fi
 
+# Print Rust version
+rustc --version
+
+# Print Cargo version
+cargo --version
+
+# Print Soroban version
+soroban --version
+
 # Check if the Cargo.toml file exists
 if [ ! -f "Cargo.toml" ]; then
     echo "ERROR: Cargo.toml file does not exist"
