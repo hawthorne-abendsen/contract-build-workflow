@@ -48,7 +48,7 @@ jobs:
 
       - name: Run docker container
         working-directory: ${{ env.BUILD_DIR_PATH }}
-        run: docker run --rm -e CONTRACT_DIR=${{ matrix.directory }} -v "${{ env.BUILD_DIR_PATH }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:v0.8.0
+        run: docker run --rm -e CONTRACT_DIR=${{ matrix.directory }} -v "${{ env.BUILD_DIR_PATH }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:v0.8.1
 
       - name: Get wasm file name
         working-directory: ${{ env.BUILD_DIR_PATH }}
