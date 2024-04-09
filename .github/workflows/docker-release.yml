@@ -1,9 +1,12 @@
 name: Build, Package and Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: 'Name for the release'
+        required: true
+        type: string              
 
 jobs:
   build_and_docker:
@@ -13,11 +16,36 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Update version in YAML file
+      run: |
+        sed -i 's|ghcr.io/stellar-expert/soroban-build-workflow:.*|ghcr.io/stellar-expert/soroban-build-workflow:${{ inputs.release_name }}|' .github/workflows/release.yml
+
+    - name: Commit and push changes
+      uses: actions/github-script@v6
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        script: |
+          const fs = require('fs');
+          const path = '.github/workflows/release.yml'
+          // Check if file was modified
+          if (fs.existsSync(path) && git.status(['--porcelain', path]).trim()) {
+            await github.rest.git.createCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              message: `Update version to ${{ inputs.release_name }}`,
+              tree: git.hashObject({path: path, type: 'blob', w: true}).sha,
+              parents: [await git.getRef({ref: 'heads/main'}).object.sha]
+            })
+            // Push the commit
+            await git.push({
+              ref: 'refs/heads/main',
+              force: false
+            })
+          }
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2 
-
-    - name: Extract version tag
-      run: echo "VERSION_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
     - name: Log in to GHCR using a PAT
       uses: docker/login-action@v2  
@@ -33,7 +61,7 @@ jobs:
         push: true  
         tags: |
           ghcr.io/${{ github.repository }}:${{ github.sha }}
-          ghcr.io/${{ github.repository }}:${{ env.VERSION_TAG }}
+          ghcr.io/${{ github.repository }}:${{ inputs.release_name }}
           ghcr.io/${{ github.repository }}:latest
 
     - name: Create Release
@@ -42,6 +70,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ env.VERSION_TAG }}
+        tag_name: ${{ inputs.release_name }}
         draft: false
         prerelease: false
