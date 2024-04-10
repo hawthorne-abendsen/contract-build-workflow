@@ -59,7 +59,7 @@ jobs:
           echo "WASM_FILE_NAME=$(basename $wasm_file)" >> $GITHUB_ENV  
           echo "WASM_FILE_SHA256=$(sha256sum $wasm_file | cut -d ' ' -f 1)" >> $GITHUB_ENV 
       
-      - name: Wasm file from directory "${{ matrix.directory }}" with hash ${{ env.WASM_FILE_SHA256 }} created
+      - name: Wasm file from directory '${{ matrix.directory }}' with hash ${{ env.WASM_FILE_SHA256 }} created
         run: echo ${{ env.WASM_FILE_NAME }}
       
       - name: Upload artifact
