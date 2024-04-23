@@ -93,13 +93,13 @@ jobs:
             JSON_OUTPUT=$(node -e "console.log(JSON.stringify({ 
               wasm: process.env.WASM, 
               hash: process.env.HASH, 
-              path: (process.env.PATH || undefined), 
+              relPath: (process.env.REL_PATH || undefined), 
               package: (process.env.PACKAGE || undefined), 
               make: (process.env.MAKE || undefined)
             }))")
             echo "WASM_OUTPUT='$JSON_OUTPUT'" >> $GITHUB_ENV
         env:
-          PATH: ${{ inputs.relative_path }}
+          REL_PATH: ${{ inputs.relative_path }}
           PACKAGE: ${{ inputs.package }}
           MAKE: ${{ inputs.make_target }}
           HASH: ${{ env.WASM_FILE_SHA256 }}
