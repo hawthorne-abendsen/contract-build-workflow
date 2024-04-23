@@ -66,11 +66,10 @@ jobs:
       - name: Build release name
         run: |
           if [ -n "${{ inputs.relative_path }}" ]; then
-            relative_path="_${{ inputs.relative_path }}"
+            relative_path=$(echo "_${{ inputs.relative_path }}" | sed 's/\W\+/_/g')
           fi
-          tag="${relative_path}_${{ env.WASM_FILE_NAME }}"
-          cleaned_tag=$(echo "${{ inputs.release_name }}$tag" | sed 's/\W\+/_/g')
-          echo "TAG_NAME=$cleaned_tag" >> $GITHUB_ENV
+          tag_name="${{ inputs.release_name }}${relative_path}_${{ env.WASM_FILE_NAME }}"
+          echo "TAG_NAME=$tag_name" >> $GITHUB_ENV
         
       - name: Create release
         uses: softprops/action-gh-release@v2
