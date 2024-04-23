@@ -21,6 +21,12 @@ fi
 if [ "$MAKE_TARGET" ]; then
     # Run the make command
     make $MAKE_TARGET
+    if [ $? -eq 0 ]; then
+        echo "Make completed successfully."
+    else
+        echo "Make failed."
+        exit 1
+    fi
 fi
 
 # Print Rust version

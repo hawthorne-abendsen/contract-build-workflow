@@ -63,30 +63,13 @@ jobs:
           echo "WASM_FILE_NAME=$(basename $wasm_file)" >> $GITHUB_ENV  
           echo "WASM_FILE_SHA256=$(sha256sum $wasm_file | cut -d ' ' -f 1)" >> $GITHUB_ENV 
       
-      - name: Output WASM ${{ env.WASM_FILE_SHA256 }} from ${{ env.CONTRACT_DIR_NAME }}
-        run: echo ${{ env.WASM_FILE_NAME }}
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.WASM_FILE_NAME }}
-          path: ${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/${{ env.WASM_FILE_NAME }}
-          if-no-files-found: error
-      
       - name: Build release name
         run: |
           if [ -n "${{ inputs.relative_path }}" ]; then
             relative_path="_${{ inputs.relative_path }}"
-          else
-            relative_path=""
           fi
-          if [ -n "${{ inputs.package }}" ]; then
-            package="_${{ inputs.package }}"
-          else
-            package=""
-          fi
-          tag=${{ inputs.release_name }}${relative_path}${package}_${{ env.WASM_FILE_NAME }}
-          cleaned_tag=$(echo "$tag" | sed 's/\W\+/_/g')
+          tag="${relative_path}_${{ env.WASM_FILE_NAME }}"
+          cleaned_tag=$(echo "${{ inputs.release_name }}$tag" | sed 's/\W\+/_/g')
           echo "TAG_NAME=$cleaned_tag" >> $GITHUB_ENV
         
       - name: Create release
@@ -98,3 +81,58 @@ jobs:
           body: ${{ inputs.release_description }}
           files: '${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/${{ env.WASM_FILE_NAME }}'
           token: ${{ secrets.release_token }}
+
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '14'
+  
+      - name: Build output
+        run: |
+            JSON_OUTPUT=$(node -e "console.log(JSON.stringify({ 
+              wasm: process.env.WASM, 
+              hash: process.env.HASH, 
+              path: (process.env.PATH || undefined), 
+              package: (process.env.PACKAGE || undefined), 
+              make: (process.env.MAKE || undefined)
+            }))")
+            echo "WASM_OUTPUT='$JSON_OUTPUT'" >> $GITHUB_ENV
+        env:
+          PATH: ${{ inputs.relative_path }}
+          PACKAGE: ${{ inputs.package }}
+          MAKE: ${{ inputs.make_target }}
+          HASH: ${{ env.WASM_FILE_SHA256 }}
+          WASM: ${{ env.WASM_FILE_NAME }}
+
+      - name: Output WASM ${{ env.WASM_OUTPUT }}
+        run: echo ${{ env.WASM_OUTPUT }}
+
+      - name: Send release info
+        run: |
+          JSON_OBJECT=$(node -e "console.log(JSON.stringify({
+            repository: process.env.REPOSITORY,
+            commitHash: process.env.COMMIT_HASH,
+            jobId: process.env.JOB_ID,
+            runId: process.env.RUN_ID,
+            contractHash: process.env.CONTRACT_HASH,
+            relativePath: process.env.RELATIVE_PATH || undefined,
+            packageName: process.env.PACKAGE_NAME || undefined,
+            makeTarget: process.env.MAKE_TARGET || undefined
+          }))")
+      
+          echo "JSON to send: $JSON_OBJECT"
+      
+          curl -X POST "https://api.stellar.expert/explorer/public/contract-validation/match" \
+               -H "Content-Type: application/json" \
+               -d "$JSON_OBJECT" \
+               --max-time 15
+        env:
+          REPOSITORY: ${{ github.server_url }}/${{ github.repository }}
+          COMMIT_HASH: ${{ github.sha }}
+          JOB_ID: ${{ github.job }}
+          RUN_ID: ${{ github.run_id }}
+          CONTRACT_HASH: ${{ env.WASM_FILE_SHA256 }}
+          RELATIVE_PATH: ${{ inputs.relative_path }}
+          PACKAGE_NAME: ${{ inputs.package }}
+          MAKE_TARGET: ${{ inputs.make_target }}
