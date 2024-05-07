@@ -91,12 +91,12 @@ jobs:
 
           # Check if the release_name input is equal to PACKAGE_VERSION
           if [ "${{ inputs.release_name }}" != "${{ env.PACKAGE_VERSION }}" ] && [ "${{ inputs.release_name }}" != "v${{ env.PACKAGE_VERSION }}" ]; then
-            pkg_version="_pkg_${{ env.PACKAGE_VERSION }}"
+            pkg_version="_pkg${{ env.PACKAGE_VERSION }}"
           else
             pkg_version=""
           fi
 
-          tag_name="${{ inputs.release_name }}${relative_path}_${{ env.PACKAGE_NAME }}${pkg_version}_cli_${{ env.CLI_VERSION }}"
+          tag_name="${{ inputs.release_name }}${relative_path}_${{ env.PACKAGE_NAME }}${pkg_version}_cli${{ env.CLI_VERSION }}"
           echo "TAG_NAME=$tag_name" >> $GITHUB_ENV
         
       - name: Create release
