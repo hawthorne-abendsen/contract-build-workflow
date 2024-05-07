@@ -82,15 +82,6 @@ jobs:
               echo "The JSON file $JSON_FILE does not exist."
               exit 1
           fi
-
-      - name: Get wasm file name
-        working-directory: ${{ env.BUILD_DIR_PATH }}
-        run: |
-          cd ${{ env.BUILD_DIR_PATH }}/compilation_workflow_release
-          wasm_file=$(find -type f -name "*.wasm")
-          cp $wasm_file ${{ env.BUILD_DIR_PATH }}
-          echo "WASM_FILE_NAME=$(basename $wasm_file)" >> $GITHUB_ENV  
-          echo "WASM_FILE_SHA256=$(sha256sum $wasm_file | cut -d ' ' -f 1)" >> $GITHUB_ENV 
       
       - name: Build release name
         run: |
@@ -105,7 +96,7 @@ jobs:
             pkg_version=""
           fi
 
-          tag_name="${{ inputs.release_name }}${relative_path}_${{ env.WASM_FILE_NAME }}${pkg_version}_cli_${{ env.CLI_VERSION }}"
+          tag_name="${{ inputs.release_name }}${relative_path}_${{ env.PACKAGE_NAME }}${pkg_version}_cli_${{ env.CLI_VERSION }}"
           echo "TAG_NAME=$tag_name" >> $GITHUB_ENV
         
       - name: Create release
