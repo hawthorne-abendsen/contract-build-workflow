@@ -112,8 +112,8 @@ jobs:
           prerelease: false
           body: ${{ inputs.release_description }}
           files: |
-            '${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/${{ env.WASM_FILE_NAME }}'
-            '${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/compilation_info.json'
+            ${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/${{ env.WASM_FILE_NAME }}
+            ${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/compilation_info.json
           token: ${{ secrets.release_token }}
 
       - name: Attest
