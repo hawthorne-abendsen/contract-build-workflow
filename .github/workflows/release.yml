@@ -175,3 +175,5 @@ jobs:
         with:
           subject-path: '${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/${{ env.WASM_FILE_NAME }}'
           subject-name: '${{ env.WASM_OUTPUT }}'
+          subject-digest: 'sha256:${{ env.WASM_HASH }}'
+          push-to-registry: true
