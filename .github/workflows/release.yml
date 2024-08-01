@@ -111,10 +111,12 @@ jobs:
           draft: false
           prerelease: false
           body: ${{ inputs.release_description }}
-          files: '${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/${{ env.WASM_FILE_NAME }}'
+          files: |
+            '${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/${{ env.WASM_FILE_NAME }}'
+            '${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/compilation_info.json'
           token: ${{ secrets.release_token }}
 
       - name: Attest
         uses: actions/attest-build-provenance@v1
         with:
-          subject-path: '${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/${{ env.WASM_FILE_NAME }}, ${BUILD_DIR_PATH}/compilation_workflow_release/compilation_info.json'
+          subject-path: '${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/${{ env.WASM_FILE_NAME }}, ${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/compilation_info.json'
