@@ -32,7 +32,7 @@ jobs:
   build:
     permissions:
       id-token: write
-      contents: read
+      contents: write
       attestations: write
       
     runs-on: ubuntu-latest 
