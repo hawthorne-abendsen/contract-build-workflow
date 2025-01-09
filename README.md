@@ -7,6 +7,7 @@ When triggered, this workflow:
 - Creates an optimized WebAssembly file ready to be deployed to Soroban
 - Publishes GitHub release with attached build artifacts
 - Includes SHA256 hashes of complied WASM files into actions output for further verification
+- Generates and uploads build attestations
 
 ## Configuration
 
@@ -25,6 +26,8 @@ The workflow expects the following inputs in the `with` section:
 - `package` (optional) - package name to build, builds contract in working directory by default
 - `relative_path` (optional) - relative path to the contract source directory, defaults to the repository root directory
 - `make_target` (optional) - make target to invoke, empty by default (useful for contracts with dependencies that must be built before the main contract)
+- `release_description` (optional) - release description
+- `home_domain` (optional) - home domain for the contract
 
 ### Basic workflow for the reporisotry with a single contract
 
@@ -34,12 +37,19 @@ on:
   push: 
     tags:
       - 'v*'  # triggered whenever a new tag (prefixed with "v") is pushed to the repository
+
+permissions:  # required permissions for the workflow
+  id-token: write
+  contents: write
+  attestations: write
+
 jobs:
   release-contract-a:
     uses: stellar-expert/soroban-build-workflow/.github/workflows/release.yml@main
     with:
       release_name: ${{ github.ref_name }}          # use git tag as unique release name
       release_description: 'Contract release'       # some boring placeholder text to attach
+      home_domain: 'awesome.com'                    # home domain for the contract
       relative_path: '["src/my-awesome-contract"]'  # relative path to your really awesome contract
       package: 'my-awesome-contract'                # package name to build
       make_target: 'build-dependencies'             # make target to invoke
@@ -49,12 +59,14 @@ jobs:
 
 ### Workflow permissions
 
-In order to create a release, the workflow needs `contents: write` permission. Default workflow permissions for a repository can be found at
-"Settings"->"Actions"->"Workflow permissions". This workflow should work just fine with default settings ("Read and write permissions").
-Alternatively, it's possible to specify permissions in the `.github/workflows/release.yml` configuration file itself:
+In order to create a release and attestation, the workflow needs `id-token: write`, `contents: write` and `attestations: write` permission. Default workflow permissions for a repository can be found at
+"Settings"->"Actions"->"Workflow permissions".
+It's important to specify permissions on the top level in the `.github/workflows/release.yml` configuration file itself:
 ```yaml
 permissions:
+  id-token: write
   contents: write
+  attestations: write
 ```
 
 ### Building multiple contracts
@@ -67,6 +79,12 @@ on:
   push: 
     tags:
       - 'v*'  # triggered whenever a new tag (previxed with "v") is pushed to the repository
+
+permissions:
+  id-token: write
+  contents: write
+  attestations: write
+
 jobs:
   release-contract-a:
     uses: stellar-expert/soroban-build-workflow/.github/workflows/release.yml@main
@@ -111,6 +129,12 @@ on:
         description: 'Unique release name'
         required: true
         type: string
+
+permissions:
+  id-token: write
+  contents: write
+  attestations: write
+
 jobs:
   release-contract:
     with:
