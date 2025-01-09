@@ -110,6 +110,8 @@ jobs:
           echo "TAG_NAME=$tag_name" >> $GITHUB_ENV
         
       - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.release_token }}
         run: |
           gh release create ${{ env.TAG_NAME }} '${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/${{ env.WASM_FILE_NAME }}' \
               --title ${{ env.TAG_NAME }} \
