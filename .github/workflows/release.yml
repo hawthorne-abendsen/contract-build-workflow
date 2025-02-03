@@ -116,6 +116,7 @@ jobs:
         run: |
           echo "$PWD"
           ls -la
+          chmod 644 ./${{ env.WASM_FILE_NAME }}
           gh release create ${{ env.TAG_NAME }} ./${{ env.WASM_FILE_NAME }} \
             --title ${{ env.TAG_NAME }} \
             --notes ${{ inputs.release_description }}
