@@ -110,14 +110,17 @@ jobs:
           echo "TAG_NAME=$tag_name" >> $GITHUB_ENV
         
       - name: Create release
-        working-directory: ${{ env.BUILD_DIR_PATH }}/compilation_workflow_release
-        env:
-          GH_TOKEN: ${{ secrets.release_token }}
-        run: |
-          gh release create ${{ env.TAG_NAME }} ${{ env.WASM_FILE_NAME }} \
-            --title ${{ env.TAG_NAME }} \
-            --notes ${{ inputs.release_description }}
-        shell: bash
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: ${{ env.TAG_NAME }},
+              name: '${{ env.WASM_FILE_NAME }}',
+              data: fs.readFileSync('${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/${{ env.WASM_FILE_NAME }}'),
+            })
 
       - name: Build output
         uses: actions/github-script@v7
