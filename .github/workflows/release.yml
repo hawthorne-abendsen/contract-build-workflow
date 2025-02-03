@@ -114,7 +114,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.release_token }}
         run: |
-          gh release create ${{ env.TAG_NAME }} ${{ env.WASM_FILE_NAME }} \
+          gh release create ${{ env.TAG_NAME }} "${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/${{ env.WASM_FILE_NAME }}" \
               --title ${{ env.TAG_NAME }} \
               --notes ${{ inputs.release_description }}
 
