@@ -13,11 +13,14 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Rust using rustup
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# Define environment variables for Rust installation
+ENV CARGO_HOME=/usr/local/cargo
+ENV RUSTUP_HOME=/usr/local/rustup
+ENV PATH="${PATH}:/usr/local/cargo/bin"
 
-# Add Rust's cargo bin directory to your PATH
-ENV PATH="${PATH}:/root/.cargo/bin"
+# Install Rust using rustup (into /usr/local/cargo for global access)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal \
+    && chmod -R 777 /usr/local/cargo /usr/local/rustup
 
 # Define the version argument for rustc with a default value
 ARG RUST_VERSION=""
@@ -41,14 +44,10 @@ RUN if [ -z "$STELLAR_CLI_VERSION" ]; then \
          cargo install --locked stellar-cli --features opt --version $STELLAR_CLI_VERSION; \
        fi
 
-# Print the version of rustc
-RUN rustc --version
-
-# Print the version of cargo
-RUN cargo --version
-
-# Print the version of stellar-cli
-RUN stellar --version
+# Print versions to verify installation
+RUN rustc --version && \
+    cargo --version && \
+    stellar --version
 
 # Specify the package to build
 ENV PACKAGE=${PACKAGE}
