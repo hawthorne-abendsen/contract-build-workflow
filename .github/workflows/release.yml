@@ -157,8 +157,8 @@ jobs:
           GH_TOKEN: ${{ secrets.release_token }}
         run: |
           gh release create ${TAG_NAME} ./${WASM_FILE_NAME} \
-            --title ${env.TAG_NAME} \
-            --notes ${inputs.release_description}
+            --title ${TAG_NAME} \
+            --notes ${{inputs.release_description}}
         shell: bash
 
       - name: Build output
