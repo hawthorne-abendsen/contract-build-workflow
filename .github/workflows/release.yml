@@ -79,7 +79,6 @@ jobs:
         run: |
           rustc --version
           cargo --version
-          stellar --version
 
       - name: Get Cargo.toml metadata
         working-directory: ${{ env.WORK_DIR }}
