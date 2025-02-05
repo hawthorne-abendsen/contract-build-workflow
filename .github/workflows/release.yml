@@ -80,6 +80,9 @@ jobs:
           rustc --version
           cargo --version
 
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Get Cargo.toml metadata
         working-directory: ${{ env.WORK_DIR }}
         run: |
@@ -89,6 +92,14 @@ jobs:
           fi
           CARGO_METADATA=$(cargo metadata --format-version=1 --no-deps)
           echo "CARGO_METADATA=$CARGO_METADATA" >> $GITHUB_ENV
+
+          # Get the package version
+          PACKAGE_VERSION=$(echo "$CARGO_METADATA" | jq '.packages[] | select(.name == "'"${PACKAGE_NAME}"'") | .version' | sed -e 's/"//g')
+          if [ -z "$PACKAGE_VERSION" ]; then
+              echo "ERROR: Failed to get the package version"
+              exit 1
+          fi
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
 
       - name: Set output directory path
         run: |
@@ -100,7 +111,7 @@ jobs:
         with:
           version: '22.0.1'
       - run: |
-          cd ${{ env.WORK_DIR }}
+          cd ${WORK_DIR}
           HOME_DOMAIN=${HOME_DOMAIN:+"--meta home_domain=$HOME_DOMAIN"}
           if [ "$PACKAGE" ]; then
               stellar contract build --package $PACKAGE --out-dir ${OUTPUT} --meta source_repo=$REPO $HOME_DOMAIN
@@ -111,6 +122,15 @@ jobs:
               PACKAGE_NAME=$(grep -m1 '^name =' Cargo.toml | cut -d '"' -f2)
               stellar contract build --out-dir ${OUTPUT} --meta source_repo=$REPO $HOME_DOMAIN
           fi
+
+          # Build the wasm file name
+          WASM_FILE_NAME="${PACKAGE_NAME}_v${PACKAGE_VERSION}.wasm"
+          echo "WASM_FILE_NAME=$WASM_FILE_NAME" >> $GITHUB_ENV
+
+          cd ${OUTPUT}
+
+          # Find the .wasm file and copy it as unoptimized.wasm for hash calculation
+          find ${OUTPUT} -name "*.wasm" -exec cp {} ${WASM_FILE_NAME} \;
           stellar contract optimize --wasm ${WASM_FILE_NAME} --wasm-out ${WASM_FILE_NAME}
           echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
       
@@ -122,14 +142,14 @@ jobs:
           fi
 
           # Check if the release_name input is equal to PACKAGE_VERSION
-          if [ "${{ inputs.release_name }}" != "${{ env.PACKAGE_VERSION }}" ] && [ "${{ inputs.release_name }}" != "v${{ env.PACKAGE_VERSION }}" ]; then
-            pkg_version="_pkg${{ env.PACKAGE_VERSION }}"
+          if [ "${{ inputs.release_name }}" != "${PACKAGE_VERSION}" ] && [ "${{ inputs.release_name }}" != "v${PACKAGE_VERSION}" ]; then
+            pkg_version="_pkg${env.PACKAGE_VERSION}"
           else
             pkg_version=""
           fi
 
-          tag_name="${{ inputs.release_name }}${relative_path}_${{ env.PACKAGE_NAME }}${pkg_version}_cli${{ env.CLI_VERSION }}"
-          echo "TAG_NAME=$tag_name" >> $GITHUB_ENV
+          TAG_NAME="${{ inputs.release_name }}${relative_path}_${env.PACKAGE_NAME}${pkg_version}_cli${CLI_VERSION}"
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
         
       - name: Create release
         working-directory: ${{ env.BUILD_DIR_PATH }}/compilation_workflow_release
