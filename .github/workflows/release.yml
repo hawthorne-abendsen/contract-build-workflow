@@ -143,12 +143,12 @@ jobs:
 
           # Check if the release_name input is equal to PACKAGE_VERSION
           if [ "${{ inputs.release_name }}" != "${PACKAGE_VERSION}" ] && [ "${{ inputs.release_name }}" != "v${PACKAGE_VERSION}" ]; then
-            pkg_version="_pkg${env.PACKAGE_VERSION}"
+            pkg_version="_pkg${PACKAGE_VERSION}"
           else
             pkg_version=""
           fi
 
-          TAG_NAME="${{ inputs.release_name }}${relative_path}_${env.PACKAGE_NAME}${pkg_version}_cli${CLI_VERSION}"
+          TAG_NAME="${{ inputs.release_name }}${relative_path}_${PACKAGE_NAME}${pkg_version}_cli${CLI_VERSION}"
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
         
       - name: Create release
@@ -156,9 +156,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.release_token }}
         run: |
-          gh release create ${{ env.TAG_NAME }} ./${{ env.WASM_FILE_NAME }} \
-            --title ${{ env.TAG_NAME }} \
-            --notes ${{ inputs.release_description }}
+          gh release create ${TAG_NAME} ./${WASM_FILE_NAME} \
+            --title ${env.TAG_NAME} \
+            --notes ${inputs.release_description}
         shell: bash
 
       - name: Build output
