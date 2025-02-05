@@ -93,14 +93,6 @@ jobs:
           CARGO_METADATA=$(cargo metadata --format-version=1 --no-deps)
           echo "CARGO_METADATA=$CARGO_METADATA" >> $GITHUB_ENV
 
-          # Get the package version
-          PACKAGE_VERSION=$(echo "$CARGO_METADATA" | jq '.packages[] | select(.name == "'"${PACKAGE_NAME}"'") | .version' | sed -e 's/"//g')
-          if [ -z "$PACKAGE_VERSION" ]; then
-              echo "ERROR: Failed to get the package version"
-              exit 1
-          fi
-          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
-
       - name: Set output directory path
         run: |
           OUTPUT="$WORK_DIR/release"
@@ -122,6 +114,14 @@ jobs:
               PACKAGE_NAME=$(grep -m1 '^name =' Cargo.toml | cut -d '"' -f2)
               stellar contract build --out-dir ${OUTPUT} --meta source_repo=$REPO $HOME_DOMAIN
           fi
+
+          # Get the package version
+          PACKAGE_VERSION=$(echo "$CARGO_METADATA" | jq '.packages[] | select(.name == "'"${PACKAGE_NAME}"'") | .version' | sed -e 's/"//g')
+          if [ -z "$PACKAGE_VERSION" ]; then
+              echo "ERROR: Failed to get the package version"
+              exit 1
+          fi
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
 
           # Build the wasm file name
           WASM_FILE_NAME="${PACKAGE_NAME}_v${PACKAGE_VERSION}.wasm"
