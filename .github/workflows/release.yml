@@ -42,59 +42,82 @@ jobs:
       
     runs-on: ubuntu-latest 
     steps:
-      - name: Set directory names and paths
+      - name: Generate working directory
         run: |
-          build_dir_name="build_"$(openssl rand -base64 8 | tr -d '/+=' | head -c 8)
-          echo "BUILD_DIR_NAME=$build_dir_name" >> $GITHUB_ENV
-          echo "BUILD_DIR_PATH=${{ github.workspace }}/$build_dir_name" >> $GITHUB_ENV
-
-      - name: Verify that checkout directory doesn't exist
-        run: |
-          if [[ -d ${{ env.BUILD_DIR_PATH }} ]]; then
-            echo "Directory ${{ env.BUILD_DIR_PATH }} already exists"
-            exit 1
-          fi
+          RANDOM_DIR=$(openssl rand -hex 8)
+          WORK_DIR="${{ github.workspace }}/$RANDOM_DIR"
+          mkdir -p "$WORK_DIR"
+          echo "WORK_DIR=$WORK_DIR" >> $GITHUB_ENV
+          echo "Using working directory: $WORK_DIR"
 
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          path: ${{ env.BUILD_DIR_NAME }}
-
-      - name: Run docker container
-        working-directory: ${{ env.BUILD_DIR_PATH }}
-        run: docker run --rm --user $(id -u):$(id -g) -e RELATIVE_PATH=${{ inputs.relative_path }} -e MAKE_TARGET=${{ inputs.make_target }} -e PACKAGE=${{ inputs.package }} -e REPO=github:${{github.event.repository.full_name}} -e HOME_DOMAIN=${{inputs.home_domain}} -v "${{ env.BUILD_DIR_PATH }}:/inspector/home" ghcr.io/hawthorne-abendsen/contract-build-workflow:v22.0.11
-
-      - name: Get compilation info
-        working-directory: ${{ env.BUILD_DIR_PATH }}
+          path: ${{ env.WORK_DIR }}
+      
+      - name: Set relative path
         run: |
-          # Compilation info JSON file
-          JSON_FILE="${BUILD_DIR_PATH}/compilation_workflow_release/compilation_info.json"
-
-          # Check if the file exists
-          if [ -f "$JSON_FILE" ]; then
-              # Read the JSON file
-              json=$(cat "$JSON_FILE")
-          
-              # Parse values from JSON using native Bash commands
-              PACKAGE_NAME=$(echo "$json" | grep -oP '"packageName": "\K[^"]+')
-              PACKAGE_VERSION=$(echo "$json" | grep -oP '"packageVersion": "\K[^"]+')
-              CLI_VERSION=$(echo "$json" | grep -oP '"cliVersion": "\K[^"]+')
-              WASM_FILE_NAME=$(echo "$json" | grep -oP '"wasmFileName": "\K[^"]+')
-              WASM_HASH=$(echo "$json" | grep -oP '"wasmHash": "\K[^"]+')
-          
-              # Set environment variables using 'echo' to be picked up by GitHub Actions
-              echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
-              echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
-              echo "CLI_VERSION=$CLI_VERSION" >> $GITHUB_ENV
-              echo "WASM_FILE_NAME=$WASM_FILE_NAME" >> $GITHUB_ENV
-              echo "WASM_HASH=$WASM_HASH" >> $GITHUB_ENV
-          else
-              echo "The JSON file $JSON_FILE does not exist."
-              exit 1
+          if [ "${{ inputs.relative_path }}" ]; then
+            WORK_DIR="$WORK_DIR/${{ inputs.relative_path }}"
+            echo "WORK_DIR=$WORK_DIR" >> $GITHUB_ENV
+            echo "Using relative path: $WORK_DIR"
           fi
+      
+      - name: Run Make (if applicable)
+        if: inputs.make_target != ''
+        working-directory: ${{ env.WORK_DIR }}
+        run: |
+          make ${{ inputs.make_target }}
+
+      - name: Update Rust and Add wasm32 Target
+        working-directory: ${{ env.WORK_DIR }}
+        run: |
+          rustup update
+          rustup target add wasm32-unknown-unknown
+
+      - name: Print versions
+        run: |
+          rustc --version
+          cargo --version
+          stellar --version
+
+      - name: Get Cargo.toml metadata
+        working-directory: ${{ env.WORK_DIR }}
+        run: |
+          if [ ! -f "Cargo.toml" ]; then
+            echo "Cargo.toml does not exist"
+            exit 1
+          fi
+          CARGO_METADATA=$(cargo metadata --format-version=1 --no-deps)
+          echo "CARGO_METADATA=$CARGO_METADATA" >> $GITHUB_ENV
+
+      - name: Set output directory path
+        run: |
+          OUTPUT="$WORK_DIR/release"
+          echo "OUTPUT=$OUTPUT" >> $GITHUB_ENV
+
+      - name: Build contract
+        uses: stellar/stellar-cli@v22.0.1
+        with:
+          version: '22.0.1'
+      - run: |
+          cd ${{ env.WORK_DIR }}
+          HOME_DOMAIN=${HOME_DOMAIN:+"--meta home_domain=$HOME_DOMAIN"}
+          if [ "$PACKAGE" ]; then
+              stellar contract build --package $PACKAGE --out-dir ${OUTPUT} --meta source_repo=$REPO $HOME_DOMAIN
+              # Set the package name to the provided package name
+              PACKAGE_NAME=$PACKAGE
+          else
+              # Get the package name from the Cargo.toml file
+              PACKAGE_NAME=$(grep -m1 '^name =' Cargo.toml | cut -d '"' -f2)
+              stellar contract build --out-dir ${OUTPUT} --meta source_repo=$REPO $HOME_DOMAIN
+          fi
+          stellar contract optimize --wasm ${WASM_FILE_NAME} --wasm-out ${WASM_FILE_NAME}
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
       
       - name: Build release name
         run: |
+          CLI_VERSION=$(stellar --version | grep -oP 'stellar \K\S+')
           if [ -n "${{ inputs.relative_path }}" ]; then
             relative_path=$(echo "_${{ inputs.relative_path }}" | sed 's/\W\+/_/g')
           fi
@@ -114,9 +137,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.release_token }}
         run: |
-          echo "$PWD"
-          ls -la
-          chmod 644 ./${{ env.WASM_FILE_NAME }}
           gh release create ${{ env.TAG_NAME }} ./${{ env.WASM_FILE_NAME }} \
             --title ${{ env.TAG_NAME }} \
             --notes ${{ inputs.release_description }}
@@ -143,36 +163,6 @@ jobs:
 
       - name: Output WASM ${{ env.WASM_OUTPUT }}
         run: echo ${{ env.WASM_OUTPUT }}
-
-      - name: Send release info
-        run: |
-          JSON_OBJECT=$(node -e "console.log(JSON.stringify({
-            repository: process.env.REPOSITORY,
-            commitHash: process.env.COMMIT_HASH,
-            jobId: process.env.JOB_ID,
-            runId: process.env.RUN_ID,
-            contractHash: process.env.CONTRACT_HASH,
-            relativePath: process.env.RELATIVE_PATH || undefined,
-            packageName: process.env.PACKAGE_NAME || undefined,
-            makeTarget: process.env.MAKE_TARGET || undefined
-          }))")
-      
-          echo "JSON to send: $JSON_OBJECT"
-      
-          curl -X POST "https://api.stellar.expert/explorer/public/contract-validation/match" \
-               -H "Content-Type: application/json" \
-               -d "$JSON_OBJECT" \
-               --max-time 15
-        env:
-          REPOSITORY: ${{ github.server_url }}/${{ github.repository }}
-          COMMIT_HASH: ${{ github.sha }}
-          JOB_ID: ${{ github.job }}
-          RUN_ID: ${{ github.run_id }}
-          CONTRACT_HASH: ${{ env.WASM_HASH }}
-          RELATIVE_PATH: ${{ inputs.relative_path }}
-          PACKAGE_NAME: ${{ inputs.package }}
-          MAKE_TARGET: ${{ inputs.make_target }}
-      
 
       - name: Attest
         uses: actions/attest-build-provenance@v1
