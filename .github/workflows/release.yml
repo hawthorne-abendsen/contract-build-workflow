@@ -152,7 +152,7 @@ jobs:
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
         
       - name: Create release
-        working-directory: ${{ env.BUILD_DIR_PATH }}/compilation_workflow_release
+        working-directory: ${{ env.OUTPUT }}
         env:
           GH_TOKEN: ${{ secrets.release_token }}
         run: |
@@ -186,5 +186,5 @@ jobs:
       - name: Attest
         uses: actions/attest-build-provenance@v1
         with:
-          subject-path: '${{ env.BUILD_DIR_PATH }}/compilation_workflow_release/${{ env.WASM_FILE_NAME }}'
+          subject-path: '${{ env.OUTPUT }}/${{ env.WASM_FILE_NAME }}'
           subject-name: '${{ env.WASM_FILE_NAME }}'
