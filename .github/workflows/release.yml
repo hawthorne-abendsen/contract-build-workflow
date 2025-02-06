@@ -95,7 +95,8 @@ jobs:
 
       - name: Set output directory path
         run: |
-          OUTPUT="$WORK_DIR/release"
+          RANDOM_DIR=$(openssl rand -hex 8)
+          OUTPUT="$WORK_DIR/$RANDOM_DIR"
           echo "OUTPUT=$OUTPUT" >> $GITHUB_ENV
 
       - name: Build contract
@@ -156,7 +157,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.release_token }}
         run: |
-          gh release create ${TAG_NAME} ./${WASM_FILE_NAME} \
+          echo "$PWD"
+          ls -la
+          gh release create ${TAG_NAME} ${WASM_FILE_NAME} \
             --title ${TAG_NAME} \
             --notes ${{inputs.release_description}}
         shell: bash
