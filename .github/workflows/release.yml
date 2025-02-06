@@ -159,7 +159,7 @@ jobs:
         run: |
           echo "$PWD"
           ls -la
-          gh release create ${TAG_NAME} ${WASM_FILE_NAME} \
+          gh release create "${TAG_NAME}" "${{ env.OUTPUT }}/${{ env.WASM_FILE_NAME }}" \
             --title ${TAG_NAME} \
             --notes ${{inputs.release_description}}
         shell: bash
