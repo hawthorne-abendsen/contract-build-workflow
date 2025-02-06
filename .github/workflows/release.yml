@@ -112,6 +112,9 @@ jobs:
           COMMAND_ARGS="--out-dir ${OUTPUT} --meta source_repo=${{ github.repository }}"
           if [ "${{ inputs.package }}" ]; then
               COMMAND_ARGS="--package ${{ inputs.package }} $COMMAND_ARGS"
+              PACKAGE_NAME=${{ inputs.package }}
+          else
+              PACKAGE_NAME=$(grep -m1 '^name =' Cargo.toml | cut -d '"' -f2)
           fi
           if [ "${{ inputs.home_domain }}" ]; then
             COMMAND_ARGS="$COMMAND_ARGS --meta home_domain=${{ inputs.home_domain }}"
