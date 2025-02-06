@@ -105,16 +105,24 @@ jobs:
           version: '22.0.1'
       - run: |
           cd ${WORK_DIR}
-          HOME_DOMAIN=${HOME_DOMAIN:+"--meta home_domain=$HOME_DOMAIN"}
+          COMMAND_ARGS="--out-dir ${OUTPUT} --meta source_repo=${{ github.repository }}"
           if [ "$PACKAGE" ]; then
-              stellar contract build --package $PACKAGE --out-dir ${OUTPUT} --meta source_repo=$REPO $HOME_DOMAIN
-              # Set the package name to the provided package name
-              PACKAGE_NAME=$PACKAGE
-          else
-              # Get the package name from the Cargo.toml file
-              PACKAGE_NAME=$(grep -m1 '^name =' Cargo.toml | cut -d '"' -f2)
-              stellar contract build --out-dir ${OUTPUT} --meta source_repo=$REPO $HOME_DOMAIN
+              COMMAND_ARGS="--package $PACKAGE $COMMAND_ARGS"
           fi
+          if [ "${{ inputs.home_domain }}" ]; then
+            COMMAND_ARGS="$COMMAND_ARGS --meta home_domain=${{ inputs.home_domain }}"
+          fi
+
+          BUILD_INFO=$(jq -n \
+            --arg package "$PACKAGE" \
+            --arg make "$MAKE" \
+            --arg rel_path "$REL_PATH" \
+            '{package: $package, make: $make, relPath: $rel_path, wasm: $wasm, hash: $hash}
+            | with_entries(select(.value != ""))')
+
+          COMMAND_ARGS="$COMMAND_ARGS --meta build_info=$BUILD_INFO"
+
+          stellar contract build $COMMAND_ARGS
 
           # Get the package version
           PACKAGE_VERSION=$(echo "$CARGO_METADATA" | jq '.packages[] | select(.name == "'"${PACKAGE_NAME}"'") | .version' | sed -e 's/"//g')
@@ -122,18 +130,23 @@ jobs:
               echo "ERROR: Failed to get the package version"
               exit 1
           fi
-          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
 
           # Build the wasm file name
           WASM_FILE_NAME="${PACKAGE_NAME}_v${PACKAGE_VERSION}.wasm"
-          echo "WASM_FILE_NAME=$WASM_FILE_NAME" >> $GITHUB_ENV
 
           cd ${OUTPUT}
 
           # Find the .wasm file and copy it as unoptimized.wasm for hash calculation
           find ${OUTPUT} -name "*.wasm" -exec cp {} ${WASM_FILE_NAME} \;
           stellar contract optimize --wasm ${WASM_FILE_NAME} --wasm-out ${WASM_FILE_NAME}
+
+          WASM_HASH=$(sha256sum $WASM_FILE_NAME | cut -d ' ' -f 1)
+          
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
+          echo "WASM_FILE_NAME=$WASM_FILE_NAME" >> $GITHUB_ENV
+          echo "WASM_HASH=$WASM_HASH" >> $GITHUB_ENV
           echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
+          echo "BUILD_INFO=$BUILD_INFO" >> $GITHUB_ENV
       
       - name: Build release name
         run: |
@@ -161,26 +174,6 @@ jobs:
           ls -la
           gh release create "${{ env.TAG_NAME }}" "${{ env.OUTPUT }}/${{ env.WASM_FILE_NAME }}"
         shell: bash
-
-      - name: Build output
-        uses: actions/github-script@v7
-        with: 
-          script: |
-            const buildInfo = JSON.stringify({ 
-              wasm: process.env.WASM, 
-              hash: process.env.HASH, 
-              relPath: (process.env.REL_PATH || undefined), 
-              package: (process.env.PACKAGE || undefined), 
-              make: (process.env.MAKE || undefined)
-            });
-            // Store JSON as an environment variable
-            core.exportVariable('BUILD_INFO', buildInfo);
-        env:
-          REL_PATH: ${{ inputs.relative_path }}
-          PACKAGE: ${{ inputs.package }}
-          MAKE: ${{ inputs.make_target }}
-          HASH: ${{ env.WASM_HASH }}
-          WASM: ${{ env.WASM_FILE_NAME }}
 
       - name: Output WASM ${{ env.BUILD_INFO }}
         run: echo ${{ env.BUILD_INFO }}
