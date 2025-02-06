@@ -42,7 +42,7 @@ jobs:
       
     runs-on: ubuntu-latest 
     steps:
-      - name: Generate working directory
+      - name: Set working directory
         run: |
           RANDOM_DIR=$(openssl rand -hex 8)
           WORK_DIR="${{ github.workspace }}/$RANDOM_DIR"
@@ -57,6 +57,7 @@ jobs:
       
       - name: Set relative path
         run: |
+          # Set relative path after checking out the code
           if [ "${{ inputs.relative_path }}" ]; then
             WORK_DIR="$WORK_DIR/${{ inputs.relative_path }}"
             echo "WORK_DIR=$WORK_DIR" >> $GITHUB_ENV
@@ -104,24 +105,29 @@ jobs:
         with:
           version: '22.0.1'
       - run: |
+          # Navigate to the working directory
           cd ${WORK_DIR}
+
+          # Build command arguments
           COMMAND_ARGS="--out-dir ${OUTPUT} --meta source_repo=${{ github.repository }}"
-          if [ "$PACKAGE" ]; then
-              COMMAND_ARGS="--package $PACKAGE $COMMAND_ARGS"
+          if [ "${{inputs.package}}" ]; then
+              COMMAND_ARGS="--package ${{inputs.package}} $COMMAND_ARGS"
           fi
           if [ "${{ inputs.home_domain }}" ]; then
             COMMAND_ARGS="$COMMAND_ARGS --meta home_domain=${{ inputs.home_domain }}"
           fi
 
+          # Build info
           BUILD_INFO=$(jq -n \
-            --arg package "$PACKAGE" \
-            --arg make "$MAKE" \
-            --arg rel_path "$REL_PATH" \
-            '{package: $package, make: $make, relPath: $rel_path, wasm: $wasm, hash: $hash}
+            --arg package "${{inputs.package}}" \
+            --arg make_target "${{inputs.make_target}}" \
+            --arg relative_path "${{inputs.relative_path}}" \
+            '{package: $package, make_target: $make_target, relative_path: $relative_path}
             | with_entries(select(.value != ""))')
 
           COMMAND_ARGS="$COMMAND_ARGS --meta build_info=$BUILD_INFO"
 
+          # Build the contract
           stellar contract build $COMMAND_ARGS
 
           # Get the package version
@@ -134,14 +140,17 @@ jobs:
           # Build the wasm file name
           WASM_FILE_NAME="${PACKAGE_NAME}_v${PACKAGE_VERSION}.wasm"
 
+          # Navigate to the output directory
           cd ${OUTPUT}
 
           # Find the .wasm file and copy it as unoptimized.wasm for hash calculation
           find ${OUTPUT} -name "*.wasm" -exec cp {} ${WASM_FILE_NAME} \;
           stellar contract optimize --wasm ${WASM_FILE_NAME} --wasm-out ${WASM_FILE_NAME}
 
+          # Calculate the hash of the wasm file
           WASM_HASH=$(sha256sum $WASM_FILE_NAME | cut -d ' ' -f 1)
           
+          # Set environment variables
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
           echo "WASM_FILE_NAME=$WASM_FILE_NAME" >> $GITHUB_ENV
           echo "WASM_HASH=$WASM_HASH" >> $GITHUB_ENV
@@ -170,8 +179,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.release_token }}
         run: |
-          echo "$PWD"
-          ls -la
           gh release create "${{ env.TAG_NAME }}" "${{ env.OUTPUT }}/${{ env.WASM_FILE_NAME }}"
         shell: bash
 
