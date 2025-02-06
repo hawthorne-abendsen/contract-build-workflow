@@ -110,8 +110,8 @@ jobs:
 
           # Build command arguments
           COMMAND_ARGS="--out-dir ${OUTPUT} --meta source_repo=${{ github.repository }}"
-          if [ "${{inputs.package}}" ]; then
-              COMMAND_ARGS="--package ${{inputs.package}} $COMMAND_ARGS"
+          if [ "${{ inputs.package }}" ]; then
+              COMMAND_ARGS="--package ${{ inputs.package }} $COMMAND_ARGS"
           fi
           if [ "${{ inputs.home_domain }}" ]; then
             COMMAND_ARGS="$COMMAND_ARGS --meta home_domain=${{ inputs.home_domain }}"
@@ -119,11 +119,14 @@ jobs:
 
           # Build info
           BUILD_INFO=$(jq -n \
-            --arg package "${{inputs.package}}" \
-            --arg make_target "${{inputs.make_target}}" \
-            --arg relative_path "${{inputs.relative_path}}" \
+            --arg package "${{ inputs.package }}" \
+            --arg make_target "${{ inputs.make_target }}" \
+            --arg relative_path "${{ inputs.relative_path }}" \
             '{package: $package, make_target: $make_target, relative_path: $relative_path}
             | with_entries(select(.value != ""))')
+
+          # Convert to JSON string
+          BUILD_INFO=$(echo "$BUILD_INFO" | jq -c .)
 
           COMMAND_ARGS="$COMMAND_ARGS --meta build_info=$BUILD_INFO"
 
