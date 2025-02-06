@@ -185,7 +185,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.release_token }}
         run: |
-          gh release create "${{ env.TAG_NAME }}" "${{ env.OUTPUT }}/${{ env.WASM_FILE_NAME }}"
+          gh release create "${{ env.TAG_NAME }}" "${{ env.OUTPUT }}/${{ env.WASM_FILE_NAME }}" \
+            --title "${{ env.TAG_NAME }}" \
+            --notes "${{ inputs.release_description }}"
         shell: bash
 
       - name: Output WASM ${{ env.BUILD_INFO }}
