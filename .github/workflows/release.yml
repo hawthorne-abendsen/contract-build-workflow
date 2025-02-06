@@ -159,21 +159,22 @@ jobs:
         run: |
           echo "$PWD"
           ls -la
-          gh release create v1.2.3 "${{ env.OUTPUT }}/${{ env.WASM_FILE_NAME }}"
+          gh release create "${{ env.TAG_NAME }}" "${{ env.OUTPUT }}/${{ env.WASM_FILE_NAME }}"
         shell: bash
 
       - name: Build output
         uses: actions/github-script@v7
         with: 
           script: |
-            JSON_OUTPUT=$(node -e "console.log(JSON.stringify({ 
+            const buildInfo = JSON.stringify({ 
               wasm: process.env.WASM, 
               hash: process.env.HASH, 
               relPath: (process.env.REL_PATH || undefined), 
               package: (process.env.PACKAGE || undefined), 
               make: (process.env.MAKE || undefined)
-            }))")
-            echo "WASM_OUTPUT='$JSON_OUTPUT'" >> $GITHUB_ENV
+            });
+            // Store JSON as an environment variable
+            core.exportVariable('BUILD_INFO', buildInfo);
         env:
           REL_PATH: ${{ inputs.relative_path }}
           PACKAGE: ${{ inputs.package }}
@@ -181,8 +182,8 @@ jobs:
           HASH: ${{ env.WASM_HASH }}
           WASM: ${{ env.WASM_FILE_NAME }}
 
-      - name: Output WASM ${{ env.WASM_OUTPUT }}
-        run: echo ${{ env.WASM_OUTPUT }}
+      - name: Output WASM ${{ env.BUILD_INFO }}
+        run: echo ${{ env.BUILD_INFO }}
 
       - name: Attest
         uses: actions/attest-build-provenance@v1
