@@ -191,8 +191,8 @@ jobs:
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
-          format: 'spdx-json'
-          output-file: 'generated.sbom.spdx.json'
+          format: 'cyclonedx-json'
+          output-file: 'generated.sbom.json'
 
       - name: Add Workflow Metadata to SBOM
         run: |
@@ -204,11 +204,11 @@ jobs:
               {"annotationType": "OTHER", "annotator": "GitHub Actions", "annotationDate": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'", "comment": "Build metadata added"},
               {"annotationType": "OTHER", "annotator": "Workflow", "annotationDate": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'", "comment": ${{ env.BUILD_INFO }}}
             ]
-          }' generated.sbom.spdx.json > sbom.spdx.final.json
+          }' generated.sbom.json > sbom.final.json
 
       - name: Attest
         uses: actions/attest-sbom@v2
         with:
           subject-path: '${{ env.OUTPUT }}/${{ env.WASM_FILE_NAME }}'
           subject-name: '${{ env.WASM_FILE_NAME }}'
-          sbom-path: 'sbom.spdx.final.json'
+          sbom-path: 'sbom.final.json'
