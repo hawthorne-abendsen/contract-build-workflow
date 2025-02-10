@@ -196,7 +196,6 @@ jobs:
         with:
           format: 'spdx-json'
           output-file: 'sbom.spdx.json'
-          path: '${{ env.OUTPUT }}'
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
