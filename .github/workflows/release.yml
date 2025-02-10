@@ -131,8 +131,6 @@ jobs:
           # Convert to JSON string
           BUILD_INFO=$(echo "$BUILD_INFO" | jq -c .)
 
-          COMMAND_ARGS="$COMMAND_ARGS --meta build_info=$BUILD_INFO"
-
           # Build the contract
           stellar contract build $COMMAND_ARGS
 
@@ -194,17 +192,23 @@ jobs:
         uses: anchore/sbom-action@v0
         with:
           format: 'spdx-json'
-          output-file: 'sbom.spdx.json'
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: workflow-artifacts
-          path: 'sbom.spdx.json'
+          output-file: 'generated.sbom.spdx.json'
+
+      - name: Add Workflow Metadata to SBOM
+        run: |
+          jq '. |= {
+            "SPDXID": "SPDXRef-DOCUMENT",
+            "name": "SBOM for ${{ github.repository }}",
+            "documentNamespace": "https://spdx.org/spdxdocs/${{ github.run_id }}",
+            "annotations": [
+              {"annotationType": "OTHER", "annotator": "GitHub Actions", "annotationDate": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'", "comment": "Build metadata added"},
+              {"annotationType": "OTHER", "annotator": "Workflow", "annotationDate": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'", "comment": ${{ env.BUILD_INFO }}}
+            ]
+          }' generated.sbom.spdx.json > sbom.spdx.final.json
 
       - name: Attest
         uses: actions/attest-sbom@v2
         with:
           subject-path: '${{ env.OUTPUT }}/${{ env.WASM_FILE_NAME }}'
           subject-name: '${{ env.WASM_FILE_NAME }}'
-          sbom-path: 'sbom.spdx.json'
+          sbom-path: 'sbom.spdx.final.json'
