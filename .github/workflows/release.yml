@@ -75,8 +75,6 @@ jobs:
         run: |
           rustup update
           rustup target add wasm32v1-none
-          cargo install toml-cli
-          
 
       - name: Print versions
         run: |
@@ -110,7 +108,7 @@ jobs:
           # Navigate to the working directory
           cd ${WORK_DIR}
 
-          toml set Cargo.toml package.description "Modified by workflow" > Cargo.tmp && mv Cargo.tmp Cargo.toml
+          # mv src/lib.tmp src/lib.rs
 
           # Build command arguments
           COMMAND_ARGS="--out-dir ${OUTPUT} --meta source_repo=${{ github.repository }}"
