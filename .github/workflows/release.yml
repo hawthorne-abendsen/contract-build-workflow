@@ -131,6 +131,8 @@ jobs:
           # Convert to JSON string
           BUILD_INFO=$(echo "$BUILD_INFO" | jq -c .)
 
+          COMMAND_ARGS="$COMMAND_ARGS --meta build_info=$BUILD_INFO"
+
           # Build the contract
           stellar contract build $COMMAND_ARGS
 
@@ -147,15 +149,12 @@ jobs:
           # Navigate to the output directory
           cd ${OUTPUT}
 
-          # Find the .wasm file and rename it as the wasm file name
-          find ${OUTPUT} -name "*.wasm" -exec mv {} ${WASM_FILE_NAME} \;
+          # Find the .wasm file and copy it as unoptimized.wasm for hash calculation
+          find ${OUTPUT} -name "*.wasm" -exec cp {} ${WASM_FILE_NAME} \;
           stellar contract optimize --wasm ${WASM_FILE_NAME} --wasm-out ${WASM_FILE_NAME}
 
           # Calculate the hash of the wasm file
           WASM_HASH=$(sha256sum $WASM_FILE_NAME | cut -d ' ' -f 1)
-
-          # Save the build info to the file
-          echo "$BUILD_INFO" > build_info.json
           
           # Set environment variables
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
@@ -191,21 +190,8 @@ jobs:
             --notes "${{ inputs.release_description }}"
         shell: bash
 
-      - name: Generate SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          format: 'spdx-json'
-          output-file: 'sbom.spdx.json'
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: workflow-artifacts
-          path: 'sbom.spdx.json'
-
       - name: Attest
-        uses: actions/attest-sbom@v2
+        uses: actions/attest-build-provenance@v1
         with:
           subject-path: '${{ env.OUTPUT }}/${{ env.WASM_FILE_NAME }}'
           subject-name: '${{ env.WASM_FILE_NAME }}'
-          sbom-path: 'sbom.spdx.json'
