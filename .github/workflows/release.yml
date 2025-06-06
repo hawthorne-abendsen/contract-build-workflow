@@ -108,7 +108,7 @@ jobs:
           # Navigate to the working directory
           cd ${WORK_DIR}
 
-          # mv src/lib.tmp src/lib.rs
+          mv src/lib.tmp src/lib.rs
 
           # Build command arguments
           COMMAND_ARGS="--out-dir ${OUTPUT} --meta source_repo=${{ github.repository }}"
